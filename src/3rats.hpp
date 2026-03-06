@@ -256,10 +256,17 @@ namespace gui {
   }
   void drawTri(const tri3<mesh_size>& t1){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
-    scoord x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
+    signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
            x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
            x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
-    scoord minx=max(min(x0,x1,x2),0),miny=max(min(y0,y1,y2),0),maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
+    scoord minx=max(min(x0,x1,x2),0),
+           miny=max(min(y0,y1,y2),0),
+           maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),
+           maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
+    float area=triarea(
+                SCAST(float,x0),SCAST(float,y0),
+                SCAST(float,x1),SCAST(float,y1),
+                SCAST(float,x2),SCAST(float,y2));
     if(logmisc){
       // fprintf(debug,"(%u,%u),(%u,%u)\npolygon((%u,%u),(%u,%u),(%u,%u))\n",minx,miny,maxx,maxy,x0,y0,x1,y1,x2,y2);
       PRINTTRI(debug,t1,f);
@@ -283,14 +290,11 @@ namespace gui {
               SCAST(float,x1), SCAST(float,y1),
               SCAST(float,x),  SCAST(float,y)
             ))>=0){
-              barycentric=barycentric/triarea(
-                SCAST(float,x0),SCAST(float,y0),
-                SCAST(float,x1),SCAST(float,y1),
-                SCAST(float,x2),SCAST(float,y2));
+              barycentric=barycentric/area;
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);
-              if((depth_buffer[x+y*term_dims.ws_col]) > (unsigned char)(d*255)){
-                depth_buffer[x+y*term_dims.ws_col]=(unsigned char)(d*255);
+              if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
+                depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
                 if(0<depth&&depth<FARPLANEX){
                   char c=charsbyopacity[(int)(d*opacitylength)];
                   putChar(x,y,c);

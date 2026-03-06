@@ -34,7 +34,7 @@ int main() {
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
       case '[' :if(escapes&'\x03'=='\x01'){escapes|='\x02';}continue;
-      case 'q':exit(0);break;
+      case 'q':gui::stop();exit(0);break;
     }
     if(escapes&'\x03'=='\x03'){
       switch(c){
