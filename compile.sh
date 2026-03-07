@@ -4,14 +4,14 @@
 if [ "$1" = "debug" ];then
   if [ "$2" = "preprocess" ];then
     echo preprocessing
-    g++ -E -std="c++20" -I./src -g ./src/main.cc -o ./debug/debug.i 2>log.txt
+    gcc -std="c++20" -I./src ./src/main.cc -g -E -lstdc++ -lm -o ./debug/debug.i 2>log.txt
     if [ $(stat -c%s ./log.txt) -gt 1 ];then
       echo preprocessing failure
       exit 1
     fi
     echo preprocessing success
   else
-    g++ -std="c++20" -I./src -g ./src/main.cc -o ./debug/debug.out 2>log.txt #change something maybe
+    gcc -std="c++20" -I./src -g ./src/main.cc -lstdc++ -lm -o ./debug/debug.out 2>log.txt #change something maybe
     if test $(stat -c%s ./log.txt) -gt 1; then
       echo debug didn\'t compile \:\(
       cat log.txt
@@ -30,7 +30,7 @@ if [ "$1" = "debug" ];then
   fi
   exit 0
 fi
-g++ -std="c++20" -I./src ./src/main.cc 2>log.txt
+gcc -std="c++20" -I./src ./src/main.cc -lstdc++ -lm 2>log.txt
 if test $(stat -c%s ./log.txt) -gt 1; then
   echo didn\'t compile \:\(
   cat log.txt
