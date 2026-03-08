@@ -202,12 +202,14 @@ namespace gui {
               SCAST(float,x),  SCAST(float,y)
             ))>=0){
               barycentric=barycentric/area;
-              barycentric.x*=z0;barycentric.y*=z1;barycentric.z*=z2;
-              float depth=(barycentric.x+barycentric.y+barycentric.z);
-              vec3<float> barycentric1 = barycentric/(z0+z1+z2);
-              vec2<float> uv=uv0 * barycentric1.x + uv1 * barycentric1.y + uv2 * barycentric1.z;
-              int idx=(uv.x*tex.width+uv.y*tex.height*tex.width);
-              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
+              float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+              float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+              u*=tex.width; 
+              v*=tex.height;
+              // fprintf(debug,"(%f,%f),",u,v);
+              int iu=(((int)u%tex.width+tex.width)%tex.width); 
+              int iv=(((int)v%tex.height+tex.height)%tex.height); 
+              int idx=(iv*tex.width+iu)*3;
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);

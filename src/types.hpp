@@ -1,5 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
+#include <cstring>
+#include <cstdlib>
 namespace colors {
   enum color:char{//3 bit color 1 bit intensity
     black=0,red,green,brown,blue,purple,cyan,white,
@@ -13,9 +15,15 @@ namespace gui {
 }
 namespace assets {
   struct texture_t {
-    unsigned char* pixels;
-    int width, height;
-    ~texture_t() noexcept {free(pixels);}
+      unsigned char* pixels;
+      int width, height;
+      texture_t() = default;
+      texture_t(const texture_t& o) {
+          width=o.width; height=o.height;
+          pixels=(unsigned char*)malloc(width*height*3);
+          memcpy(pixels,o.pixels,width*height*3);
+      }
+      ~texture_t() noexcept {free(pixels);}
   };
 }
 namespace mesh {
