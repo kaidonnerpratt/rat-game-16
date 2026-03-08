@@ -202,18 +202,12 @@ namespace gui {
               SCAST(float,x),  SCAST(float,y)
             ))>=0){
               barycentric=barycentric/area;
-              float w0=barycentric.x/z0, w1=barycentric.y/z1,w2=barycentric.z/z2;
-              float wsum = w0+w1+w2;//will be an issue
-              w0/=wsum; w1/=wsum; w2/=wsum;
-              float u = uv0.x*w0+ uv1.x*w1+uv2.x*w2;
-              float v = uv0.y*w0+ uv1.y*w1+uv2.y*w2;
-              u*=tex.width; 
-              v*=tex.height;
-              int idx = (v*tex.width+u)*3;
-              if(logmisc){
-                fprintf(debug, "u=%f v=%f idx=%d r=%d g=%d b=%d\n", u, v, idx, tex.pixels[idx], tex.pixels[idx+1], tex.pixels[idx+2]);
-                fflush(debug);
-              }
+              barycentric.x*=z0;barycentric.y*=z1;barycentric.z*=z2;
+              float depth=(barycentric.x+barycentric.y+barycentric.z);
+              vec3<float> barycentric1 = barycentric/(z0+z1+z2);
+              vec2<float> uv=uv0 * barycentric1.x + uv1 * barycentric1.y + uv2 * barycentric1.z;
+              int idx=(uv.x*tex.width+uv.y*tex.height*tex.width);
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);
