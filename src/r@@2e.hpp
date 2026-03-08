@@ -20,8 +20,6 @@
 #define STATE_ICLR 0b10000000
 namespace gui {
   using namespace colors;
-  typedef unsigned short int scoord;//coordinate on the screen, in characters
-  typedef unsigned char sfrac;//represents the fraction of width/this
 
   const tcflag_t RAWMODE_LFLAGS=~(ECHO|ICANON|/*ISIG|*/IEXTEN),//remember that ~ is bitwise not
                  RAWMODE_IFLAGS=~(BRKINT|ICRNL|INPCK|ISTRIP|IXON),
@@ -85,6 +83,7 @@ namespace gui {
   void init(){
     //make sure we're not doing things twice. idiot.
     DO(state)ORDIE("couldn't init r@@2e: we already started");
+    puts("INITIALIZING TERMINAL ILLNESS");
     atexit(stop);
 
     //get starting terminal state so we can put it back once we're done
