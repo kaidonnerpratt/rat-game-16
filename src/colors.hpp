@@ -1,12 +1,7 @@
 // #define ansi_fg(x) x+30
 // #define ansi_bg(x) x+40
 namespace colors {
-  typedef unsigned char color_t;//4 bits for fg and bg. bg lshift 4
-  constexpr char color_reset=0;//chars as integers not chars
-  enum color:char{//3 bit color 1 bit intensity
-    black=0,red,green,brown,blue,purple,cyan,white,
-    gray,bright_red,bright_green,yellow,bright_blue,bright_purple,bright_cyan,bright_white
-  };
+  const char color_reset=0;//chars as integers not chars
   constexpr color_t col(enum color fore,enum color back){return ((fore)|(back<<4));}
   constexpr color_t default_color=col(white,black);
   constexpr char* ansi_fg(char c){

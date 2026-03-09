@@ -3,6 +3,7 @@
 #define PRINT_TRI2(B,T,F) fprintf(B,"polygon((%" #F ",%" #F "),(%" #F ",%" #F "),(%" #F ",%" #F ")),",T.a.x,T.a.y,T.b.x,T.b.y,T.c.x,T.c.y)
 #define PRINT_TRI23(B,T,F) fprintf(B,"triangle((%" #F ",%" #F ",%" #F "),(%" #F ",%" #F ",%" #F "),(%" #F ",%" #F ",%" #F ")),",T.a.x,T.a.y,0,T.b.x,T.b.y,0,T.c.x,T.c.y,0)
 #include <stdio.h>
+#include <stdlib.h>
 #include <type_traits>
 FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
@@ -18,14 +19,26 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
   T b=max(a...);
   return t<b?b:t;
 }
+#include <types.hpp>
 #include <r@@2e.hpp>
 #include <3rats.hpp>
 #include <assets.hpp>
-// #include <curses.h>
 int main() {
-  puts("\rRAT GAME 16\n\r");
-  gui::init();
+  puts("\rRAT GAME 16");
+  puts("LOADING MODELS");
   mesh::model_t* models=assets::readModels("assets/cube.stl");
+  puts("LOADING TEXTURES");
+  assets::texture_t tex = assets::readPPM("assets/cube.ppm");
+  for(short unsigned int i = 0; i < models[0].tricount; i++){
+      models[0].tris[i].tex = &tex;
+      auto& t =models[0].tris[i];//vreaux im gooneye
+      t.uv0 = {(t.a.y+1)/2,(t.a.z+1)/2};
+      t.uv1 = {(t.b.y+1)/2,(t.b.z+1)/2};
+      t.uv2 = {(t.c.y+1)/2,(t.c.z+1)/2};
+
+  }
+  puts("INITIALIZING TERMINAL ILLNESS");
+  gui::init();
   unsigned char escapes=0;
   unsigned char mode=0;
   unsigned char modes=2;
@@ -54,7 +67,7 @@ int main() {
         case 'x':{
           gui::clear_scr();
           for(short unsigned int i=0;i<models[0].tricount;i++){
-            gui::drawMTri(models[0].tris[i]);
+          gui::drawMTri(models[0].tris[i]);
           }
           assets::writeGrayScaleToPPM("debug/frame.ppm",gui::depth_buffer,gui::term_dims.ws_col,gui::term_dims.ws_row);
         }
@@ -77,4 +90,4 @@ int main() {
   }
   fclose(debug);
   return 0;
-}
+}//WHAT ARE YOU DOING

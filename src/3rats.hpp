@@ -18,74 +18,6 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
 namespace mesh {
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
-  typedef float mesh_size;
-  template<typename T> requires arith<T>&&comp<T> struct vec2 {
-    T x,y;//these operators are fuckin wild
-    template<typename U> auto constexpr operator+(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()+std::declval<U>())>){x+v.x,y+v.y};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (vec2<decltype(std::declval<T>()+std::declval<U>())>){x+v,y+v};}
-    template<typename U> auto constexpr operator-(const vec2<T>& v)const{return (vec2<decltype(std::declval<T>()-std::declval<U>())>){x-v.x,y-v.y};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (vec2<decltype(std::declval<T>()-std::declval<U>())>){x-v,y-v};}
-    template<typename U> auto constexpr operator*(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v.x,y*v.y};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v};}
-    template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v};}
-  };//all of these should implement https://cplusplus.com/reference/type_traits/is_nothrow_move_constructible/
-  template<typename T> requires arith<T>&&comp<T> struct vec3 {
-    T x,y,z;
-    template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()+std::declval<U>())>){x+v.x,y+v.y,z+v.z};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (vec3<decltype(std::declval<T>()+std::declval<U>())>){x+v,y+v,z+v};}
-    template<typename U> auto constexpr operator-(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()-std::declval<U>())>){x-v.x,y-v.y,z-v.z};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (vec3<decltype(std::declval<T>()-std::declval<U>())>){x-v,y-v,z-v};}
-    template<typename U> auto constexpr operator*(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>())>){x*v.x,y*v.y,z*v.z};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v,z*v};}
-    template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y,z/v.z};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v,z/v};}
-  };
-  template<typename T> struct vec_inner;//partial template specialization
-  template<typename T> struct vec_inner<vec2<T>>{using type=T;};
-  template<typename T> struct vec_inner<vec3<T>>{using type=T;};
-  template<typename T> using  vec_inner_t=typename vec_inner<T>::type;
-  template<typename T> requires arith<T>&&comp<T> struct tri2 {
-    vec2<T> a,b,c;
-    template<typename U> auto constexpr operator+(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+t.a,b+t.b,c+t.c};}
-    template<typename U> auto constexpr operator+(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()+std::declval<U>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator-(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()-std::declval<vec2<U>>())>>){a-t.a,b-t.b,c-t.c};}
-    template<typename U> auto constexpr operator-(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()-std::declval<vec2<U>>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()-std::declval<U>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator*(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()*std::declval<vec2<U>>())>>){a*t.a,b*t.b,c*t.c};}
-    template<typename U> auto constexpr operator*(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()*std::declval<vec2<U>>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()*std::declval<U>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator/(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/t.a,b/t.b,c/t.c};}
-    template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/v,b/v,c/v};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
-  template<typename T> requires arith<T>&&comp<T> struct tri3 {
-    vec3<T> a,b,c;//my compiler is going to blow its brains out
-    template<typename U> auto constexpr operator+(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+t.a,b+t.b,c+t.c};}
-    template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<U>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator-(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()-std::declval<vec3<U>>())>>){a-t.a,b-t.b,c-t.c};}
-    template<typename U> auto constexpr operator-(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()-std::declval<vec3<U>>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()-std::declval<U>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator*(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()*std::declval<vec3<U>>())>>){a*t.a,b*t.b,c*t.c};}
-    template<typename U> auto constexpr operator*(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()*std::declval<vec3<U>>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()*std::declval<U>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator/(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/t.a,b/t.b,c/t.c};}
-    template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/v,b/v,c/v};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
-  struct meshtri:tri3<mesh_size>{
-    unsigned char flags=255;
-    // short unsigned int texture_id;
-    // vec2<short unsigned int> uv;vec2<short unsigned int> texdims;
-  };
-  struct model_t {
-    short unsigned int tricount;
-    meshtri* tris;
-    const char* name;
-   ~model_t() noexcept {free(tris);}
-  };
   int dumptris(char* buffer,size_t buf_size,model_t* m){
     int a=snprintf(buffer,buf_size,"%s:%u triangles:",m->name,m->tricount);
     for(int i=0;i<m->tricount;i++){
@@ -234,7 +166,7 @@ namespace gui {
   inline tri2<scoord> toSSPT(tri3<mesh_size> t){
     return (tri2<scoord>){toSSPV(t.a),toSSPV(t.b),toSSPV(t.c)};
   }
-  void drawTri(const tri3<mesh_size>& t1){
+  void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
     signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
            x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
@@ -270,14 +202,25 @@ namespace gui {
               SCAST(float,x),  SCAST(float,y)
             ))>=0){
               barycentric=barycentric/area;
+              float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+              float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+              u*=tex.width; 
+              v*=tex.height;
+              // fprintf(debug,"(%f,%f),",u,v);
+              int iu=(((int)u%tex.width+tex.width)%tex.width); 
+              int iv=(((int)v%tex.height+tex.height)%tex.height); 
+              int idx=(iv*tex.width+iu)*3;
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
                 depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
                 if(0<depth&&depth<FARPLANEX){
-                  char c=charsbyopacity[(int)(d*opacitylength)];
+                  float brightness = (r+g+b)/(255.0f*3.0f);
+                  int colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|((brightness > 0.5f)<<3);//don't need to store brightness just calculate it as bool earlier
+                  char c = charsbyopacity[(int)(d*opacitylength)];
                   putChar(x,y,c);
-                  putColor(x,y,colors::col(colors::red,colors::black));
+                  putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
                 }
               }
             }
@@ -286,8 +229,8 @@ namespace gui {
       }
     }
   }
-  void drawMTri(const meshtri& t){
-    tri3<mesh_size> t1=t-camera_position;
+void drawMTri(const meshtri& t){
+  tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
     if(v==3){return;}
@@ -301,11 +244,11 @@ namespace gui {
         t2.a=clipped[2];
         t2.b=clipped[3];
         t2.c=clipped[0];
-        drawTri(t2);//dont recurr more than once please :3
-      }
+        drawTri(t2, t.uv0, t.uv1, t.uv2, *t.tex);
+        }
       free(clipped);
     }
-    drawTri(t1);
+    drawTri(t1, t.uv0, t.uv1, t.uv2, *t.tex);
   }
 }
 #endif
