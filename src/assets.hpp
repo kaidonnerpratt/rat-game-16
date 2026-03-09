@@ -92,6 +92,14 @@ namespace assets {
     return out;
   }
   static texture_t readPPM(const char* filename){
+    /*ISSUES:
+    * - needs ppm6 support
+    * - needs to handle comments
+    * - should conform to style probably. better whitespace handling needed etc
+    * - better error handling (silently loops forever when reaching a comment, doesn't check for any other errors in reading)
+    * NOTE it's ok if it's slow this only happens on startup and we could probably cache things. better to be cautious here
+    * and lose speed than to have to debug file format weirdness. be verbose when you can afford it
+    */
     FILE* file = fopen(filename, "r");
     if(!file){ perror("couldn't open texture"); exit(1); }
     char* temp = (char*)malloc(128);

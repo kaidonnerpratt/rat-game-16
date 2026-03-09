@@ -206,11 +206,10 @@ namespace gui {
               float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
               u*=tex.width; 
               v*=tex.height;
-              // fprintf(debug,"(%f,%f),",u,v);
-              int iu=(((int)u%tex.width+tex.width)%tex.width); 
-              int iv=(((int)v%tex.height+tex.height)%tex.height); 
+              int iu=(((int)u%tex.width+tex.width)%tex.width);
+              int iv=(((int)v%tex.height+tex.height)%tex.height);
               int idx=(iv*tex.width+iu)*3;
-              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
@@ -229,8 +228,8 @@ namespace gui {
       }
     }
   }
-void drawMTri(const meshtri& t){
-  tri3<mesh_size> t1=t-camera_position;
+  void drawMTri(const meshtri& t){
+    tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
     if(v==3){return;}
