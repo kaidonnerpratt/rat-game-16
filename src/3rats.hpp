@@ -229,8 +229,8 @@ namespace gui {
       }
     }
   }
-void drawMTri(const meshtri& t){
-  tri3<mesh_size> t1=t-camera_position;
+  void drawMTri(const meshtri& t){
+    tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
     if(v==3){return;}
