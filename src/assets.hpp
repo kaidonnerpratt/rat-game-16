@@ -168,9 +168,6 @@ namespace assets {
         j++;
       }
     }
-    for(int i=0;i<width*height;i++){
-      printf("%u %u %u,",out.pixels[i*3],out.pixels[i*3+1],out.pixels[i*3+2]);
-    }
     free(tmp);
     fclose(file);
     return out;

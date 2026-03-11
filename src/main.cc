@@ -28,7 +28,7 @@ int main() {
   puts("LOADING MODELS");
   mesh::model_t* models=assets::readModels("assets/cube.stl");
   puts("LOADING TEXTURES");
-  assets::texture_t tex = assets::readPPM("assets/cube_alt.ppm");
+  assets::texture_t tex = assets::readPPM("assets/cube.ppm");
   for(short unsigned int i = 0; i < models[0].tricount; i++){
       models[0].tris[i].tex = &tex;
       auto& t =models[0].tris[i];
