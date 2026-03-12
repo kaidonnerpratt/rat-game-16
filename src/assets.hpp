@@ -157,14 +157,15 @@ namespace assets {
         j++;
       }
     }else if(format==2){//ppm6
-      short int j,k;
+      WSPACE();
+      short int r,g,b,j;
       while(!feof(file)&&(j<width*height)){
-        fread(&k,1+(maxVal>255),1,file);
-        out.pixels[j*3]  =k*255/maxVal;
-        fread(&k,1+(maxVal>255),1,file);
-        out.pixels[j*3+1]=k*255/maxVal;
-        fread(&k,1+(maxVal>255),1,file);
-        out.pixels[j*3+2]=k*255/maxVal;
+        fread(&r,1+(maxVal>255),1,file);
+        fread(&g,1+(maxVal>255),1,file);
+        fread(&b,1+(maxVal>255),1,file);
+        out.pixels[j*3]  =r*255/maxVal;
+        out.pixels[j*3+1]=g*255/maxVal;
+        out.pixels[j*3+2]=b*255/maxVal;
         j++;
       }
     }
