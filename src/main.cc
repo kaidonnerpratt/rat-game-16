@@ -31,13 +31,11 @@ int main() {
   assets::texture_t tex = assets::readPPM("assets/cube.ppm");
   for(short unsigned int i = 0; i < models[0].tricount; i++){
       models[0].tris[i].tex = &tex;
-      auto& t =models[0].tris[i];//vreaux im gooneye
+      auto& t =models[0].tris[i];
       t.uv0 = {(t.a.y+1)/2,(t.a.z+1)/2};
       t.uv1 = {(t.b.y+1)/2,(t.b.z+1)/2};
       t.uv2 = {(t.c.y+1)/2,(t.c.z+1)/2};
-
   }
-  puts("INITIALIZING TERMINAL ILLNESS");
   gui::init();
   unsigned char escapes=0;
   unsigned char mode=0;
