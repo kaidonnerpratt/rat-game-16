@@ -128,6 +128,9 @@ namespace assets {
     tmp = (char*)malloc(128);
     DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strcat(tmp,filename);perror(tmp);ABORT};
     int i=0;
+    FILE* file = fopen(filename, "r");
+    if(!file){ perror("couldn't open texture"); exit(1); }
+    char* temp = (char*)malloc(128);
     int width, height, maxVal;
     char format=0;
     printf("reading file %s:",filename);

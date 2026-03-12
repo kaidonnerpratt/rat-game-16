@@ -206,11 +206,10 @@ namespace gui {
               float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
               u*=tex.width; 
               v*=tex.height;
-              // fprintf(debug,"(%f,%f),",u,v);
-              int iu=(((int)u%tex.width+tex.width)%tex.width); 
-              int iv=(((int)v%tex.height+tex.height)%tex.height); 
+              int iu=(((int)u%tex.width+tex.width)%tex.width);
+              int iv=(((int)v%tex.height+tex.height)%tex.height);
               int idx=(iv*tex.width+iu)*3;
-              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2]; 
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/FARPLANEX);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){

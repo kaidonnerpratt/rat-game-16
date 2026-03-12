@@ -1,6 +1,7 @@
 #ifndef RATATOUILLE_H//we're just going to write a disgusting header only library
 #define RATATOUILLE_H//ratatouille is now our linux-only version. will do portability with windows later.
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
