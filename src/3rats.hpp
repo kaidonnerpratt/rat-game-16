@@ -18,23 +18,6 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
 namespace mesh {
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
-  int dumptris(char* buffer,size_t buf_size,model_t* m){
-    int a=snprintf(buffer,buf_size,"%s:%u triangles:",m->name,m->tricount);
-    for(int i=0;i<m->tricount;i++){
-      if(a>buf_size){break;}
-      a+=snprintf(&buffer[a],buf_size-a,"triangle((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)),",
-        m->tris[i].a.x,
-        m->tris[i].a.y,
-        m->tris[i].a.z,
-        m->tris[i].b.x,
-        m->tris[i].b.y,
-        m->tris[i].b.z,
-        m->tris[i].c.x,
-        m->tris[i].c.y,
-        m->tris[i].c.z);
-    }
-    return a;
-  }
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
     float r1=cos(d/128.0*M_PI),r2=sin(d/128.0*M_PI);
     float axis_0_t=(axis_0*r1)-(axis_1*r2);
@@ -228,7 +211,7 @@ namespace gui {
       }
     }
   }
-  void drawMTri(const meshtri& t){
+  void drawMTri(const meshtri& t, assets::texture_t& tex){
     tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
@@ -243,11 +226,11 @@ namespace gui {
         t2.a=clipped[2];
         t2.b=clipped[3];
         t2.c=clipped[0];
-        drawTri(t2, t.uv0, t.uv1, t.uv2, *t.tex);
+        drawTri(t2, t.uv0, t.uv1, t.uv2, tex);
         }
       free(clipped);
     }
-    drawTri(t1, t.uv0, t.uv1, t.uv2, *t.tex);
+    drawTri(t1, t.uv0, t.uv1, t.uv2, tex);
   }
 }
 #endif
