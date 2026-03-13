@@ -27,16 +27,7 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
-  mesh::model_t* models=assets::readModels("assets/cube.stl");
-  puts("LOADING TEXTURES");
-  assets::texture_t tex = assets::readPPM("assets/cube.ppm");
-  for(short unsigned int i = 0; i < models[0].tricount; i++){
-      models[0].tris[i].tex = &tex;
-      auto& t =models[0].tris[i];
-      t.uv0 = {(t.a.y+1)/2,(t.a.z+1)/2};
-      t.uv1 = {(t.b.y+1)/2,(t.b.z+1)/2};
-      t.uv2 = {(t.c.y+1)/2,(t.c.z+1)/2};
-  }
+  assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");
   gui::init();
   unsigned char escapes=0;
   unsigned char mode=0;
@@ -70,8 +61,8 @@ int main() {
         case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;
         case 'x':{
           gui::clear_scr();
-          for(short unsigned int i=0;i<models[0].tricount;i++){
-          gui::drawMTri(models[0].tris[i]);
+          for(short unsigned int i=0;i<model.mesh.tricount;i++){
+          gui::drawMTri(model.mesh.tris[i],model.texture);
           }
           assets::writeGrayScaleToPPM("debug/frame.ppm",gui::depth_buffer,gui::term_dims.ws_col,gui::term_dims.ws_row);
         }
@@ -83,9 +74,8 @@ int main() {
       gui::clear_scr();
       snprintf(gui::term_buffer,11,"mode=%.1u/%.1u",mode+1,modes);
       // fseek(stdout,-1,SEEK_CUR);
-      for(short unsigned int i=0;i<models[0].tricount;i++){
-        if(mode==0){gui::drawMTri(models[0].tris[i]);}
-        // if(mode==1){gui::drawMLines(models[0].tris[i]);}
+      for(short unsigned int i=0;i<model.mesh.tricount;i++){
+        if(mode==0){gui::drawMTri(model.mesh.tris[i],model.texture);}
       }
       if(logmisc){fputs("\n",debug);}
       gui::drawFrame();
