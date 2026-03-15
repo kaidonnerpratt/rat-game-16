@@ -1,8 +1,8 @@
-model = cube.stl;
+model= cube.stl;
 texture =cube.ppm;
 texmap=[
-  (1.0 1.0),(-1.0 -1.0),(-1.0 1.0)
+  (1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0)
 ]
 texmap_filldefault(y,z)
-texmap_offset(1)
-texmap_scale(0.5)
+texmap_offset(1,1)
+texmap_scale(0.5,0.5)
