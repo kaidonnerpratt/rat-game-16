@@ -24,6 +24,7 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <3rats.hpp>
 #include <assets.hpp>
 int main() {
+  if((sizeof(int)!=4)||(sizeof(short int)!=2)){exit(1);}
   puts("\rRAT GAME 16");
   puts("Loading assets...");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");
@@ -35,7 +36,7 @@ int main() {
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
-      case '[' :if(escapes&'\x03'=='\x01'){escapes|='\x02';}continue;
+      case '[' :if((escapes&'\x03')=='\x01'){escapes|='\x02';}continue;//aidan leuenberger secondhand thinker
       case 'q':gui::stop();exit(0);break;
     }
     if(escapes&'\x03'=='\x03'){
