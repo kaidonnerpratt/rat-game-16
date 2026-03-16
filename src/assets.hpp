@@ -54,57 +54,72 @@ namespace assets {
     return o;
   }
   static std::vector<mesh::meshtri> readSTL(const char* filename) {
-    unsigned short int i;
+    unsigned int i;
     FILE* file=fopen(filename,"r");
     char* tmp=(char*)malloc(128);
-    DO(!tmp)ORDIE("couldn't alloc name")
+    DO(!tmp)ORDIE("couldn't alloc temporary space")
     DO(!file)ORDIE("couldn't open file")
-    std::vector<mesh::meshtri> tris;
     DO(ferror(file))ORDIE("ferror 1");
-    FEXPECTL("solid ",5);
-    unsigned short int l=strlen(&tmp[i]-5);
-    char* name=(char*)malloc(l+1);
-    memcpy(name,&tmp[i+5],l);name[l]='\0';
-    while(!feof(file)){
-      fgets(tmp,128,file);
-      DO(ferror(file))ORDIE("ferror 2");
-      i=0;
-      WSPACEL(i);
-      if(!memcmp(&tmp[i],"endsolid",8)){
-        FEXPECTL(name,l)ORDIE("couldn't read stl file: bad ending");
-        break;
+    std::vector<mesh::meshtri> tris;
+    FEXPECTL("solid ",6){
+      fseek(file,0,SEEK_SET);
+      unsigned int trinum;
+      float data[12];//first 3 are normal
+      fread(tmp,80,1,file);
+      fread(&trinum,4,1,file);
+      for(i=0;(i<trinum)&&!feof(file);i++){
+        fread(data,12,4,file);
+        fseek(file,4,SEEK_CUR);//extra flags we don't really care for
+        tris.push_back((mesh::meshtri){
+          data[3],data[4],data[5],
+          data[6],data[7],data[8],
+          data[9],data[10],data[11]});
       }
-      FEXPECTL("outer loop",10)ORDIE("couldn't read stl file: expected outer loop")
-      FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
-      i+=6;
-      WSPACEL(i);
-      float x0=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float y0=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float z0=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
-      i+=6;
-      WSPACEL(i);
-      float x1=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float y1=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float z1=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
-      i+=6;
-      WSPACEL(i);
-      float x2=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float y2=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      float z2=atof(&tmp[i]);
-      NSPACEL(i);WSPACEL(i);
-      FEXPECTL("endloop",7)ORDIE("expected endloop");
-      FEXPECTL("endfacet",8)ORDIE("expected endfacet");
-      tris.push_back((mesh::meshtri){x0,y0,z0,x1,y1,z1,x2,y2,z2});
+    }else{//ascii stl
+      unsigned short int l=strlen(&tmp[i]-5);
+      char* name=(char*)malloc(l+1);
+      memcpy(name,&tmp[i+5],l);name[l]='\0';
+      while(!feof(file)){
+        fgets(tmp,128,file);
+        DO(ferror(file))ORDIE("ferror 2");
+        i=0;
+        WSPACEL(i);
+        if(!memcmp(&tmp[i],"endsolid",8)){
+          FEXPECTL(name,l)ORDIE("couldn't read stl file: bad ending");
+          break;
+        }
+        FEXPECTL("outer loop",10)ORDIE("couldn't read stl file: expected outer loop")
+        FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
+        i+=6;
+        WSPACEL(i);
+        float x0=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float y0=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float z0=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
+        i+=6;
+        WSPACEL(i);
+        float x1=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float y1=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float z1=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        FEXPECTL("vertex",6)ORDIE("couldn't read stl file: expected vertex");
+        i+=6;
+        WSPACEL(i);
+        float x2=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float y2=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        float z2=atof(&tmp[i]);
+        NSPACEL(i);WSPACEL(i);
+        FEXPECTL("endloop",7)ORDIE("expected endloop");
+        FEXPECTL("endfacet",8)ORDIE("expected endfacet");
+        tris.push_back((mesh::meshtri){x0,y0,z0,x1,y1,z1,x2,y2,z2});
+      }
     }
     free(tmp);
     tmp=NULL;
