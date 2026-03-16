@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_traits>
+#include <cmath>
 FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
@@ -31,17 +32,18 @@ int main() {
   assets::texture_t tex = assets::readPPM("assets/cube.ppm");
   for(short unsigned int i = 0; i < models[0].tricount; i++){
       models[0].tris[i].tex = &tex;
-      auto& t =models[0].tris[i];//vreaux im gooneye
+      auto& t =models[0].tris[i];
       t.uv0 = {(t.a.y+1)/2,(t.a.z+1)/2};
       t.uv1 = {(t.b.y+1)/2,(t.b.z+1)/2};
       t.uv2 = {(t.c.y+1)/2,(t.c.z+1)/2};
-
   }
-  puts("INITIALIZING TERMINAL ILLNESS");
   gui::init();
   unsigned char escapes=0;
   unsigned char mode=0;
   unsigned char modes=2;
+  unsigned char rotamnt=16;
+  float rotamntrad = (rotamnt/128.0f)*M_PI;
+  float rottrck=0;
   while(true){
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
@@ -53,17 +55,19 @@ int main() {
       switch(c){
         case 'A':mode=(mode+1)%modes;break;//up
         case 'B':mode=(mode+modes-1)%modes;break;//down
-        case 'C':mesh::camera_rotation.z-=16;break;//left
-        case 'D':mesh::camera_rotation.z+=16;break;//right
+        case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
+        case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
+        if(rottrck > 2*M_PI){rottrck-=2*M_PI;}
+        if(rottrck < 2*M_PI){rottrck+=2*M_PI;}
       }
       escapes=0;
       // continue;
     }else{
       switch(c){
-        case 'w':mesh::camera_position.x+=1;break;
-        case 's':mesh::camera_position.x-=1;break;
-        case 'd':mesh::camera_position.y+=1;break;
-        case 'a':mesh::camera_position.y-=1;break;
+        case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;
+        case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;
+        case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;
+        case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;
         case 'x':{
           gui::clear_scr();
           for(short unsigned int i=0;i<models[0].tricount;i++){
