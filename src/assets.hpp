@@ -69,11 +69,11 @@ namespace assets {
       fread(&trinum,4,1,file);
       for(i=0;(i<trinum)&&!feof(file);i++){
         fread(data,12,4,file);
-        fseek(file,4,SEEK_CUR);//extra flags we don't really care for
+        fseek(file,2,SEEK_CUR);//extra flags we don't really care for
         tris.push_back((mesh::meshtri){
-          data[3],data[4],data[5],
-          data[6],data[7],data[8],
-          data[9],data[10],data[11]});
+          data[ 3],data[ 4],data[ 5],
+          data[ 6],data[ 7],data[ 8],
+          data[ 9],data[10],data[11]});
       }
     }else{//ascii stl
       unsigned short int l=strlen(&tmp[i]-5);
@@ -354,6 +354,7 @@ namespace assets {
     free(mesh_fp);free(text_fp);
     fclose(file);file=NULL;
     return out;
+#undef ORDIE1
   }
   void writeGrayScaleToPPM(const char* name,const unsigned char* buf,size_t width,size_t height){
     FILE* file=fopen(name,"w");
