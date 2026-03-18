@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_traits>
+#include <cmath>
 FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
@@ -24,36 +25,44 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <3rats.hpp>
 #include <assets.hpp>
 int main() {
-  if((sizeof(int)!=4)||(sizeof(short int)!=2)){exit(1);}
   puts("\rRAT GAME 16");
-  puts("Loading assets...");
+  puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");
   gui::init();
   unsigned char escapes=0;
   unsigned char mode=0;
   unsigned char modes=2;
+  unsigned char rotamnt=16;
+  float rotamntrad = (rotamnt/128.0f)*M_PI;
+  float rottrck=0;
   while(true){
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
-      case '[' :if((escapes&'\x03')=='\x01'){escapes|='\x02';}continue;//aidan leuenberger secondhand thinker
+      case '[' :if(escapes&'\x03'=='\x01'){escapes|='\x02';}continue;
       case 'q':gui::stop();exit(0);break;
     }
     if(escapes&'\x03'=='\x03'){
       switch(c){
-        case 'A':mode=(mode+1)%modes;break;//up
-        case 'B':mode=(mode+modes-1)%modes;break;//down
-        case 'C':mesh::camera_rotation.z-=16;break;//left
-        case 'D':mesh::camera_rotation.z+=16;break;//right
+        // case 'A':mode=(mode+1)%modes;break;//up
+        // case 'B':mode=(mode+modes-1)%modes;break;//down
+        case 'A':mesh::farplanex++;break;
+        case 'B':mesh::farplanex--;break;
+        case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
+        case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
+        if(rottrck > 2*M_PI){rottrck-=2*M_PI;}
+        if(rottrck < 2*M_PI){rottrck+=2*M_PI;}
       }
       escapes=0;
       // continue;
     }else{
       switch(c){
-        case 'w':mesh::camera_position.x+=1;break;
-        case 's':mesh::camera_position.x-=1;break;
-        case 'd':mesh::camera_position.y+=1;break;
-        case 'a':mesh::camera_position.y-=1;break;
+        case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;
+        case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;
+        case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;
+        case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;
+        case ',':mesh::camera_position.z++;break;
+        case '.':mesh::camera_position.z--;break;
         case 'x':{
           gui::clear_scr();
           for(short unsigned int i=0;i<model.mesh.tricount;i++){
@@ -67,7 +76,7 @@ int main() {
     }
     if(c){
       gui::clear_scr();
-      snprintf(gui::term_buffer,11,"mode=%.1u/%.1u",mode+1,modes);
+      // snprintf(gui::term_buffer,11,"mode=%.1u/%.1u",mode+1,modes);
       // fseek(stdout,-1,SEEK_CUR);
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         if(mode==0){gui::drawMTri(model.mesh.tris[i],model.texture);}

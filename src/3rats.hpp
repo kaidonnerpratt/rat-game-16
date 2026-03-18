@@ -5,7 +5,6 @@
 #include <r@@2e.hpp>
 #include <cmath>
 #define SCAST(t,v) static_cast<t>(v)
-#define FARPLANEX 8
 #define MESHTRI_OUTLN_01 0b00000001
 #define MESHTRI_OUTLN_12 0b00000010
 #define MESHTRI_OUTLN_20 0b00000100
@@ -16,6 +15,7 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
   }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}
 }
 namespace mesh {
+  unsigned int farplanex=8;
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
@@ -194,10 +194,10 @@ namespace gui {
               int idx=(iv*tex.width+iu)*3;
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
-              float d=(depth/FARPLANEX);
+              float d=(depth/farplanex);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
                 depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
-                if(0<depth&&depth<FARPLANEX){
+                if(0<depth&&depth<farplanex){
                   float brightness = (r+g+b)/(255.0f*3.0f);
                   int colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|((brightness > 0.5f)<<3);//don't need to store brightness just calculate it as bool earlier
                   char c = charsbyopacity[(int)(d*opacitylength)];
