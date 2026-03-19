@@ -161,7 +161,8 @@ namespace assets {
       }
     }else if(format==2){//ppm6
       wspace(file,tmp);
-      short int r,g,b,j;
+      short unsigned int r,g,b;
+      unsigned j;
       while(!feof(file)&&(j<width*height)){
         fread(&r,1+(maxVal>255),1,file);
         fread(&g,1+(maxVal>255),1,file);
