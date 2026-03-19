@@ -23,7 +23,7 @@ namespace assets {
           pixels=(unsigned char*)malloc(width*height*3);
           memcpy(pixels,o.pixels,width*height*3);
       }
-      ~texture_t() noexcept {free(pixels);}
+      // ~texture_t() noexcept {free(pixels);}
   };
 }
 namespace mesh {
