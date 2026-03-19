@@ -244,12 +244,12 @@ namespace assets {
         DO(text_fp[0])ORDIE1("duplicate textures in asset")
         wspace(file,tmp);FEXPECTS("=",1)ORDIE("expected '=' to assign texture path");wspace(file,tmp);
         token_length=readUntil(file,tmp,';');
-        printf("reading texture file assets/texture/%.*s:",token_length,tmp);
         DO(!token_length)ORDIE1("bad texture filepath in asset")
         DO((15+token_length+1)>=128)ORDIE1("texture filepath too long")
         tmp[token_length]='\0';
         memcpy(text_fp,"assets/texture/",15);
         memcpy(&text_fp[15],tmp,token_length+1);
+        printf("reading texture file: %s, ",text_fp);
         out.texture=readPPM(text_fp);
       }else if((token_length==6)&&!(memcmp(tmp,"texmap",6))){
         DO(!mesh_fp[0])ORDIE1("expected model before texmap")
