@@ -5,7 +5,6 @@
 #include <r@@2e.hpp>
 #include <cmath>
 #define SCAST(t,v) static_cast<t>(v)
-#define FARPLANEX 8
 #define MESHTRI_OUTLN_01 0b00000001
 #define MESHTRI_OUTLN_12 0b00000010
 #define MESHTRI_OUTLN_20 0b00000100
@@ -16,25 +15,9 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
   }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}
 }
 namespace mesh {
+  unsigned int farplanex=8;
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
-  int dumptris(char* buffer,size_t buf_size,model_t* m){
-    int a=snprintf(buffer,buf_size,"%s:%u triangles:",m->name,m->tricount);
-    for(int i=0;i<m->tricount;i++){
-      if(a>buf_size){break;}
-      a+=snprintf(&buffer[a],buf_size-a,"triangle((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)),",
-        m->tris[i].a.x,
-        m->tris[i].a.y,
-        m->tris[i].a.z,
-        m->tris[i].b.x,
-        m->tris[i].b.y,
-        m->tris[i].b.z,
-        m->tris[i].c.x,
-        m->tris[i].c.y,
-        m->tris[i].c.z);
-    }
-    return a;
-  }
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
     float r1=cos(d/128.0*M_PI),r2=sin(d/128.0*M_PI);
     float axis_0_t=(axis_0*r1)-(axis_1*r2);
@@ -178,11 +161,7 @@ namespace gui {
     float area=triarea(
                 SCAST(float,x0),SCAST(float,y0),
                 SCAST(float,x1),SCAST(float,y1),
-                SCAST(float,x2),SCAST(float,y2));
-    if(logmisc){
-      PRINT_TRI3(debug,t1,f);
-      fflush(debug);
-    }
+                SCAST(float,x2),SCAST(float,y2));//i'm about to blow up
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
         vec3<float> barycentric;
@@ -202,21 +181,21 @@ namespace gui {
               SCAST(float,x),  SCAST(float,y)
             ))>=0){
               barycentric=barycentric/area;
-              float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
-              float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
-              u*=tex.width; 
-              v*=tex.height;
-              int iu=(((int)u%tex.width+tex.width)%tex.width);
-              int iv=(((int)v%tex.height+tex.height)%tex.height);
-              int idx=(iv*tex.width+iu)*3;
-              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
-              float d=(depth/FARPLANEX);
+              float d=(depth/farplanex);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
                 depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
-                if(0<depth&&depth<FARPLANEX){
-                  float brightness = (r+g+b)/(255.0f*3.0f);
-                  int colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|((brightness > 0.5f)<<3);//don't need to store brightness just calculate it as bool earlier
+                if(0<depth&&depth<farplanex){
+                  float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+                  float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+                  u*=tex.width; 
+                  v*=tex.height;
+                  int iu=(((int)u%tex.width+tex.width)%tex.width);
+                  int iv=(((int)v%tex.height+tex.height)%tex.height);
+                  int idx=(iv*tex.width+iu)*3;
+                  unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
+                  // fprintf(debug,"(%i,%i,%i,%i),",iu,iv,idx,r);
+                  char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
                   char c = charsbyopacity[(int)(d*opacitylength)];
                   putChar(x,y,c);
                   putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
@@ -228,7 +207,7 @@ namespace gui {
       }
     }
   }
-  void drawMTri(const meshtri& t){
+  void drawMTri(const meshtri& t, assets::texture_t& tex){
     tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
@@ -243,11 +222,11 @@ namespace gui {
         t2.a=clipped[2];
         t2.b=clipped[3];
         t2.c=clipped[0];
-        drawTri(t2, t.uv0, t.uv1, t.uv2, *t.tex);
+        drawTri(t2, t.uv0, t.uv1, t.uv2, tex);
         }
       free(clipped);
     }
-    drawTri(t1, t.uv0, t.uv1, t.uv2, *t.tex);
+    drawTri(t1, t.uv0, t.uv1, t.uv2, tex);//merge uvs into tri2<float>
   }
 }
 #endif

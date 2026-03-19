@@ -27,20 +27,16 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
-  mesh::model_t* models=assets::readModels("assets/cube.stl");
-  puts("LOADING TEXTURES");
-  assets::texture_t tex = assets::readPPM("assets/cube.ppm");
-  for(short unsigned int i = 0; i < models[0].tricount; i++){
-      models[0].tris[i].tex = &tex;
-      auto& t =models[0].tris[i];
-      t.uv0 = {(t.a.y+1)/2,(t.a.z+1)/2};
-      t.uv1 = {(t.b.y+1)/2,(t.b.z+1)/2};
-      t.uv2 = {(t.c.y+1)/2,(t.c.z+1)/2};
-  }
+  assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
+  // for(unsigned int x=0;x<model.texture.width;x++){
+  //   for(unsigned int y=0;y<model.texture.height;y++){
+  //     fprintf(debug,"(%u,%u,%u,%i),",x,y,(y*model.texture.width+x)*3,model.texture.pixels[(y*model.texture.width+x)*3]);
+  //   }
+  // }
+  // fputc('\n',debug);
+  // fflush(debug);
   gui::init();
   unsigned char escapes=0;
-  unsigned char mode=0;
-  unsigned char modes=2;
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
@@ -53,8 +49,8 @@ int main() {
     }
     if(escapes&'\x03'=='\x03'){
       switch(c){
-        case 'A':mode=(mode+1)%modes;break;//up
-        case 'B':mode=(mode+modes-1)%modes;break;//down
+        case 'A':mesh::farplanex++;break;
+        case 'B':mesh::farplanex--;break;
         case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
         case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
         if(rottrck > 2*M_PI){rottrck-=2*M_PI;}
@@ -68,26 +64,16 @@ int main() {
         case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;
         case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;
         case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;
-        case 'x':{
-          gui::clear_scr();
-          for(short unsigned int i=0;i<models[0].tricount;i++){
-          gui::drawMTri(models[0].tris[i]);
-          }
-          assets::writeGrayScaleToPPM("debug/frame.ppm",gui::depth_buffer,gui::term_dims.ws_col,gui::term_dims.ws_row);
-        }
-        break;
+        case ',':mesh::camera_position.z++;break;
+        case '.':mesh::camera_position.z--;break;
         case 'e':logmisc=!logmisc;break;
       }
     }
     if(c){
       gui::clear_scr();
-      snprintf(gui::term_buffer,11,"mode=%.1u/%.1u",mode+1,modes);
-      // fseek(stdout,-1,SEEK_CUR);
-      for(short unsigned int i=0;i<models[0].tricount;i++){
-        if(mode==0){gui::drawMTri(models[0].tris[i]);}
-        // if(mode==1){gui::drawMLines(models[0].tris[i]);}
+      for(short unsigned int i=0;i<model.mesh.tricount;i++){
+        gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      if(logmisc){fputs("\n",debug);}
       gui::drawFrame();
       escapes=0;
     }

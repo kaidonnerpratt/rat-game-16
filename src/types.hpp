@@ -23,7 +23,7 @@ namespace assets {
           pixels=(unsigned char*)malloc(width*height*3);
           memcpy(pixels,o.pixels,width*height*3);
       }
-      ~texture_t() noexcept {free(pixels);}
+      // ~texture_t() noexcept {free(pixels);}
   };
 }
 namespace mesh {
@@ -87,14 +87,18 @@ namespace mesh {
   };
   struct meshtri:tri3<mesh_size>{
     // unsigned char flags=255;
-    assets::texture_t* tex;
     vec2<float> uv0, uv1, uv2;
   };
   struct model_t {
     short unsigned int tricount;
     meshtri* tris;
-    const char* name;
    ~model_t() noexcept {free(tris);}
+  };
+}
+namespace assets{
+  struct asset3d_t{
+    mesh::model_t mesh;
+    assets::texture_t texture;
   };
 }
 #endif
