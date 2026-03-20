@@ -149,6 +149,7 @@ namespace gui {
   inline tri2<scoord> toSSPT(tri3<mesh_size> t){
     return (tri2<scoord>){toSSPV(t.a),toSSPV(t.b),toSSPV(t.c)};
   }
+  
   void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
     signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
@@ -227,6 +228,79 @@ namespace gui {
       free(clipped);
     }
     drawTri(t1, t.uv0, t.uv1, t.uv2, tex);//merge uvs into tri2<float>
+  }
+  
+  void drawPTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, color_t tricol){
+    mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
+    signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
+           x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
+           x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
+    scoord minx=max(min(x0,x1,x2),0),
+           miny=max(min(y0,y1,y2),0),
+           maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),
+           maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
+    float area=triarea(
+                SCAST(float,x0),SCAST(float,y0),
+                SCAST(float,x1),SCAST(float,y1),
+                SCAST(float,x2),SCAST(float,y2));//i'm about to blow up
+    for(scoord x=minx;x<maxx;x++){
+      for(scoord y=miny;y<maxy;y++){
+        vec3<float> barycentric;
+        if((barycentric.x=triarea(
+          SCAST(float,x),  SCAST(float,y),
+          SCAST(float,x1), SCAST(float,y1),
+          SCAST(float,x2), SCAST(float,y2)
+        ))>=0){
+          if((barycentric.y=triarea(
+            SCAST(float,x0), SCAST(float,y0),
+            SCAST(float,x),  SCAST(float,y),
+            SCAST(float,x2), SCAST(float,y2)
+          ))>=0){
+            if((barycentric.z=triarea(
+              SCAST(float,x0), SCAST(float,y0),
+              SCAST(float,x1), SCAST(float,y1),
+              SCAST(float,x),  SCAST(float,y)
+            ))>=0){
+              barycentric=barycentric/area;
+              float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
+              float d=(depth/farplanex);
+              if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
+                depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
+                if(0<depth&&depth<farplanex){
+                  float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+                  float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+                  // fprintf(debug,"(%i,%i,%i,%i),",iu,iv,idx,r);
+                  char c = charsbyopacity[(int)(d*opacitylength)];
+                  putChar(x,y,c);
+                  putColor(x,y,tricol);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  void drawPMTri(const meshtri& t, color_t tricol){
+    tri3<mesh_size> t1=t-camera_position;
+    rotateT(t1,camera_rotation.z);
+    char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
+    if(v==3){return;}
+    if(v!=0){
+      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);
+      t1.a=clipped[0];
+      t1.b=clipped[1];
+      t1.c=clipped[2];
+      if(clipped[3].x!=0.0f){
+        meshtri t2=t;
+        t2.a=clipped[2];
+        t2.b=clipped[3];
+        t2.c=clipped[0];
+        drawPTri(t2, t.uv0, t.uv1, t.uv2, tricol);
+        }
+      free(clipped);
+    }
+    drawPTri(t1, t.uv0, t.uv1, t.uv2, tricol);//merge uvs into tri2<float>
   }
 }
 #endif

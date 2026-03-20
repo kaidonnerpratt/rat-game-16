@@ -134,6 +134,12 @@ namespace gui {
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
   inline scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
   inline scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x+1,max_chars);}
+  inline scoord toGSPX(scoord sspi){return (scoord)((sspi-1) % term_dims.ws_col);}
+  inline scoord toGSPY(scoord sspi){return (scoord)(std::floor(sspi/term_dims.ws_col));}
+
+  char get_termXY(scoord x,scoord y){return (term_buffer[toSSPI(x,y)]);}
+  unsigned char get_depthXY(scoord x,scoord y){return (depth_buffer[toSSPI(x,y)]);}
+  color_t get_colorXY(scoord x,scoord y){return (color_buffer[toSSPI(x,y)]);}
 
   char putChar(scoord x,scoord y,unsigned char c){
     scoord p=toSSPI(x,y);

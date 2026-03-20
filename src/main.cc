@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <type_traits>
 #include <cmath>
+#include <string>
 FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
@@ -24,10 +25,29 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <r@@2e.hpp>
 #include <3rats.hpp>
 #include <assets.hpp>
+#include <portal.hpp>
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
+  portal::Portal p(2);
+  mesh::meshtri ptri1;
+  mesh::meshtri ptri2;
+
+  ptri1.a.x =   2; ptri2.a.x = 2.5;
+  ptri1.a.y =   0; ptri2.a.y =   1;
+  ptri1.a.z =   0; ptri2.a.z =   0;
+  ptri1.b.x = 2.5; ptri2.b.x =   2;
+  ptri1.b.y =   0; ptri2.b.y =   1;
+  ptri1.b.z =   0; ptri2.b.z =   0;
+  ptri1.c.x =   2; ptri2.c.x = 2.5;
+  ptri1.c.y =   1; ptri2.c.y =   0;
+  ptri1.c.z =   0; ptri2.c.z =   0;
+
+
+  p.set_tri(0, ptri1);
+  p.set_tri(1, ptri2);
+
   // for(unsigned int x=0;x<model.texture.width;x++){
   //   for(unsigned int y=0;y<model.texture.height;y++){
   //     fprintf(debug,"(%u,%u,%u,%i),",x,y,(y*model.texture.width+x)*3,model.texture.pixels[(y*model.texture.width+x)*3]);
@@ -71,10 +91,18 @@ int main() {
     }
     if(c){
       gui::clear_scr();
+      // mesh::vec3<mesh::mesh_size> cstorage = mesh::camera_position;
+      // mesh::camera_position = 
+      
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
+      printf("out: %f",model.mesh.tris[0].a.x);
+      // gui::drawPMTri(p.tris[0], colors::color::white);
+      // gui::drawPMTri(p.tris[1], colors::color::white);
+
       gui::drawFrame();
+      
       escapes=0;
     }
   }

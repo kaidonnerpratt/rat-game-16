@@ -99,6 +99,7 @@ namespace assets{
   struct asset3d_t{
     mesh::model_t mesh;
     assets::texture_t texture;
+   
   };
 }
 #endif
