@@ -54,16 +54,26 @@ namespace mesh {
     template<typename U> auto constexpr cross(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>()-std::declval<T>()*std::declval<U>())>){y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x};}
     template<typename U>
     T dist(vec3<U> o){
-      return std::
-      sqrt(std::pow(x-o.x,2)+std::pow(y-o.y,2)+std::pow(z-o.z,2));
+      return std::sqrt(std::pow(x-o.x,2)+std::pow(y-o.y,2)+std::pow(z-o.z,2));
     }
     T sdist(){
       return std::sqrt(std::pow(x,2)+std::pow(y,2)+std::pow(z,2));
     }
     template<typename U>
     vec3<T> rotate(vec3<U> o){
+      vec3<T> n = vec3<T>{x,y,z};
       T d = sdist();
-
+      float x_rot = atan2(n.y,n.z);//+o.x;
+      n.y = sin(x_rot);
+      n.z = cos(x_rot);
+      float y_rot = atan2(n.x,n.z);//+o.y;
+      n.x = sin(y_rot);
+      n.z = cos(y_rot);
+      float z_rot = atan2(n.y,n.x);//+o.z;
+      n.y = sin(z_rot);
+      n.x = cos(z_rot);
+      n=n*d;
+      return n;
     }
 
   };
@@ -124,20 +134,10 @@ namespace mesh {
       vec3<float> rot;
       vec2<float> scl;
       void apply_rotation(){
-        float cos_x = cos(rot.x);
-        float cos_y = cos(rot.y);
-        float cos_z = cos(rot.z);
-        float sin_x = sin(rot.x);
-        float sin_y = sin(rot.y);
-        float sin_z = sin(rot.z);
-        float ang_ax = atan2(a.y,a.z)+rot.x;
-        float ang_bx = atan2(b.y,b.z)+rot.x;
-        float ang_cx = atan2(c.y,c.z)+rot.x;
-        float ang_dx = atan2(d.y,d.z)+rot.x;
-
-        a.x = sin(ang_ax);
-        a.y = sin(ang_ax);
-
+        a.rotate(rot);
+        b.rotate(rot);
+        c.rotate(rot);
+        d.rotate(rot);
       }
       void create_tris(){
         e.a = b; f.a = c;
@@ -145,32 +145,40 @@ namespace mesh {
         e.c = d; f.c = a;
       }
       void reconstruct(){
-        a.x=pos.x        ;
-        a.y=pos.y+scl.y/2;
-        a.z=pos.z-scl.x/2;
-        b.x=pos.x        ;  
-        b.y=pos.y+scl.y/2;  
-        b.z=pos.z+scl.x/2;  
-        c.x=pos.x        ;  
-        c.y=pos.y-scl.y/2;  
-        c.z=pos.z-scl.x/2; 
-        d.x=pos.x        ;  
-        d.y=pos.y-scl.y/2;  
-        d.z=pos.z+scl.x/2;
+        a.y=+scl.y/2;
+        a.z=-scl.x/2;
+        b.y=+scl.y/2;  
+        b.z=+scl.x/2;  
+        c.y=-scl.y/2;  
+        c.z=-scl.x/2; 
+        d.y=-scl.y/2;  
+        d.z=+scl.x/2;
         apply_rotation();
+        a.x=a.x+pos.x;
+        a.y=a.y+pos.y;
+        a.z=a.z+pos.z;
+        b.x=b.x+pos.x;
+        b.y=b.y+pos.y;
+        b.z=b.z+pos.z;
+        c.x=c.x+pos.x;
+        c.y=c.y+pos.y;
+        c.z=c.z+pos.z;
+        d.x=d.x+pos.x;
+        d.y=d.y+pos.y;
+        d.z=d.z+pos.z;
         create_tris();
       }
       Plane(float x,float y,float z, float rx, float ry, float rz, float sx, float sy){
         pos=vec3<float>{x,y,z};
         rot=vec3<float>{rx,ry,rz};
-        scl=vec2<float>{sx,sy};
-        createTris();
+        scl=vec2<float>{sy,sx};
+        reconstruct();
       }
       Plane(vec3<float> planepos, vec3<float> planerot, vec2<float> planescl){
         pos=planepos;
         rot=planerot;
         scl=planescl;
-        createTris();
+        reconstruct();
       }
 
   };
