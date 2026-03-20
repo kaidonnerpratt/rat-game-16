@@ -60,6 +60,11 @@ namespace mesh {
     T sdist(){
       return std::sqrt(std::pow(x,2)+std::pow(y,2)+std::pow(z,2));
     }
+    template<typename U>
+    vec3<T> rotate(vec3<U> o){
+      T d = sdist();
+
+    }
 
   };
   template<typename T> struct vec_inner;//partial template specialization
@@ -111,7 +116,6 @@ namespace mesh {
     public:
       meshtri e;
       meshtri f;
-
       vec3<mesh_size> a;
       vec3<mesh_size> b;
       vec3<mesh_size> c;
@@ -120,25 +124,41 @@ namespace mesh {
       vec3<float> rot;
       vec2<float> scl;
       void apply_rotation(){
-        a.y = cos();
+        float cos_x = cos(rot.x);
+        float cos_y = cos(rot.y);
+        float cos_z = cos(rot.z);
+        float sin_x = sin(rot.x);
+        float sin_y = sin(rot.y);
+        float sin_z = sin(rot.z);
+        float ang_ax = atan2(a.y,a.z)+rot.x;
+        float ang_bx = atan2(b.y,b.z)+rot.x;
+        float ang_cx = atan2(c.y,c.z)+rot.x;
+        float ang_dx = atan2(d.y,d.z)+rot.x;
+
+        a.x = sin(ang_ax);
+        a.y = sin(ang_ax);
 
       }
       void create_tris(){
-        e.a = a; e.a = a;
-        e.b = c; e.b = c;
-        e.c = d; e.c = d;
-        e.a.x=x      ;  f.a.x=x      ;
-        e.a.y=y+scl.y;  f.a.y=y-scl.y;
-        e.a.z=z+scl.x;  f.a.z=z-scl.x;
-        e.b.x=x      ;  f.b.x=x      ;
-        e.b.y=y-scl.y;  f.b.y=y+scl.y;
-        e.b.z=z-scl.x;  f.b.z=z+scl.x;
-        e.c.x=x      ;  f.c.x=x      ;
-        e.c.y=y-scl.y;  f.c.y=y+scl.y;
-        e.c.z=z+scl.x;  f.c.z=z-scl.x;
-        
-
-
+        e.a = b; f.a = c;
+        e.b = c; f.b = b;
+        e.c = d; f.c = a;
+      }
+      void reconstruct(){
+        a.x=pos.x        ;
+        a.y=pos.y+scl.y/2;
+        a.z=pos.z-scl.x/2;
+        b.x=pos.x        ;  
+        b.y=pos.y+scl.y/2;  
+        b.z=pos.z+scl.x/2;  
+        c.x=pos.x        ;  
+        c.y=pos.y-scl.y/2;  
+        c.z=pos.z-scl.x/2; 
+        d.x=pos.x        ;  
+        d.y=pos.y-scl.y/2;  
+        d.z=pos.z+scl.x/2;
+        apply_rotation();
+        create_tris();
       }
       Plane(float x,float y,float z, float rx, float ry, float rz, float sx, float sy){
         pos=vec3<float>{x,y,z};
