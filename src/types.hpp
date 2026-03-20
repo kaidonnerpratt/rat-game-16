@@ -2,6 +2,7 @@
 #define TYPES_H
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 namespace colors {
   enum color:char{//3 bit color 1 bit intensity
     black=0,red,green,brown,blue,purple,cyan,white,
@@ -26,6 +27,7 @@ namespace assets {
       // ~texture_t() noexcept {free(pixels);}
   };
 }
+
 namespace mesh {
   typedef float mesh_size;
   template<typename T> requires arith<T>&&comp<T> struct vec2 {
@@ -50,6 +52,15 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y,z/v.z};}
     template<typename U> auto constexpr operator/(const U& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v,z/v};}
     template<typename U> auto constexpr cross(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>()-std::declval<T>()*std::declval<U>())>){y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x};}
+    template<typename U>
+    T dist(vec3<U> o){
+      return std::
+      sqrt(std::pow(x-o.x,2)+std::pow(y-o.y,2)+std::pow(z-o.z,2));
+    }
+    T sdist(){
+      return std::sqrt(std::pow(x,2)+std::pow(y,2)+std::pow(z,2));
+    }
+
   };
   template<typename T> struct vec_inner;//partial template specialization
   template<typename T> struct vec_inner<vec2<T>>{using type=T;};
@@ -69,6 +80,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/t.a,b/t.b,c/t.c};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/v,b/v,c/v};}
     template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
+    
   };
   template<typename T> requires arith<T>&&comp<T> struct tri3 {
     vec3<T> a,b,c;//my compiler is going to blow its brains out
@@ -84,6 +96,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/t.a,b/t.b,c/t.c};}
     template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/v,b/v,c/v};}
     template<typename U> auto constexpr operator/(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
+    
   };
   struct meshtri:tri3<mesh_size>{
     // unsigned char flags=255;
@@ -96,21 +109,33 @@ namespace mesh {
   };
   class Plane{
     public:
-      meshtri d;
+      meshtri e;
       meshtri f;
+
+      vec3<mesh_size> a;
+      vec3<mesh_size> b;
+      vec3<mesh_size> c;
+      vec3<mesh_size> d;
       vec3<float> pos;
       vec3<float> rot;
       vec2<float> scl;
-      void createTris(){
-        d.a.x=x      ;  f.a.x=x      ;
-        d.a.y=y+scl.y;  f.a.y=y-scl.y;
-        d.a.z=z+scl.x;  f.a.z=z-scl.x;
-        d.b.x=x      ;  f.b.x=x      ;
-        d.b.y=y-scl.y;  f.b.y=y+scl.y;
-        d.b.z=z-scl.x;  f.b.z=z+scl.x;
-        d.c.x=x      ;  f.c.x=x      ;
-        d.c.y=y-scl.y;  f.c.y=y+scl.y;
-        d.c.z=z+scl.x;  f.c.z=z-scl.x;
+      void apply_rotation(){
+        a.y = cos();
+
+      }
+      void create_tris(){
+        e.a = a; e.a = a;
+        e.b = c; e.b = c;
+        e.c = d; e.c = d;
+        e.a.x=x      ;  f.a.x=x      ;
+        e.a.y=y+scl.y;  f.a.y=y-scl.y;
+        e.a.z=z+scl.x;  f.a.z=z-scl.x;
+        e.b.x=x      ;  f.b.x=x      ;
+        e.b.y=y-scl.y;  f.b.y=y+scl.y;
+        e.b.z=z-scl.x;  f.b.z=z+scl.x;
+        e.c.x=x      ;  f.c.x=x      ;
+        e.c.y=y-scl.y;  f.c.y=y+scl.y;
+        e.c.z=z+scl.x;  f.c.z=z-scl.x;
         
 
 
