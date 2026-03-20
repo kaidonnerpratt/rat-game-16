@@ -125,7 +125,7 @@ namespace assets {
     tmp=NULL;
     fclose(file);
     file=NULL;
-    printf("%i triangles\n",tris.size());
+    printf("%li triangles\n",tris.size());
     return tris;
   }
   static texture_t readPPM(const char* filename){
@@ -209,7 +209,7 @@ namespace assets {
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(text_fp){free(text_fp);text_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
     DO(strlen(name)>=128){perror("file name too long");exit(1);}
-    printf("loading asset %s:\n");
+    printf("loading asset %s:\n",name);
     asset3d_t out{};
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(128);

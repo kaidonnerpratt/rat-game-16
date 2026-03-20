@@ -4,3 +4,6 @@ notes
 log.txt
 debug/*
 *.swp
+.vscode
+temp/*
+*.crm
