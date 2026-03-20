@@ -25,17 +25,12 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <3rats.hpp>
 #include <assets.hpp>
 #include <trenchcoat.hpp>
-FILE* file;
 int main() {
-  file = crm::open("map.crm");
-  // crm::expect(file, crm::T::magic_numbers, 4);
-  // crm::expect(file, crm::T::magic_numbers, 4);
-  crm::setPos(file,crm::find(file,crm::T::cd_header,4));
-  crm::getCurFileName(file);
-  crm::close(file);
+  crm::discard();
+  crm::unzip("map.crm");
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
-  assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
+  assets::asset3d_t model=assets::readAsset3d("temp/assets/cube.rgmdl");//ari i'm going to ear you
   // for(unsigned int x=0;x<model.texture.width;x++){
   //   for(unsigned int y=0;y<model.texture.height;y++){
   //     fprintf(debug,"(%u,%u,%u,%i),",x,y,(y*model.texture.width+x)*3,model.texture.pixels[(y*model.texture.width+x)*3]);
@@ -87,5 +82,6 @@ int main() {
     }
   }
   fclose(debug);
+
   return 0;
 }//WHAT ARE YOU DOING

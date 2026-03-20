@@ -229,12 +229,12 @@ namespace assets {
         DO(mesh_fp[0])ORDIE1("duplicate models in asset")
         wspace(file,tmp);FEXPECTS("=",1)ORDIE("expected '=' to assign model path");wspace(file,tmp);
         token_length=readUntil(file,tmp,';');
-        printf("reading model file assets/model/%.*s:",token_length,tmp);
+        printf("reading model file temp/assets/model/%.*s:",token_length,tmp);
         DO(!token_length)ORDIE1("bad model filepath in asset")
-        DO((13+token_length+1)>=128)ORDIE1("model filepath too long")
+        DO((18+token_length+1)>=128)ORDIE1("model filepath too long")
         tmp[token_length]='\0';
-        memcpy(mesh_fp,"assets/model/",13);
-        memcpy(&mesh_fp[13],tmp,token_length+1);
+        memcpy(mesh_fp,"temp/assets/model/",19);
+        memcpy(&mesh_fp[18],tmp,token_length+1);
         std::vector<mesh::meshtri> tris=readSTL(mesh_fp);//go out of scope and free yourself NOW
         out.mesh.tricount=tris.size();
         size_t s=out.mesh.tricount*sizeof(mesh::meshtri);
@@ -245,10 +245,10 @@ namespace assets {
         wspace(file,tmp);FEXPECTS("=",1)ORDIE("expected '=' to assign texture path");wspace(file,tmp);
         token_length=readUntil(file,tmp,';');
         DO(!token_length)ORDIE1("bad texture filepath in asset")
-        DO((15+token_length+1)>=128)ORDIE1("texture filepath too long")
+        DO((20+token_length+1)>=128)ORDIE1("texture filepath too long")
         tmp[token_length]='\0';
-        memcpy(text_fp,"assets/texture/",15);
-        memcpy(&text_fp[15],tmp,token_length+1);
+        memcpy(text_fp,"temp/assets/texture/",20);
+        memcpy(&text_fp[20],tmp,token_length+1);
         printf("reading texture file: %s, ",text_fp);
         out.texture=readPPM(text_fp);
       }else if((token_length==6)&&!(memcmp(tmp,"texmap",6))){
