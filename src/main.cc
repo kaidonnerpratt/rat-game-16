@@ -34,15 +34,15 @@ int main() {
   mesh::meshtri ptri1;
   mesh::meshtri ptri2;
 
-  ptri1.a.x =   2; ptri2.a.x = 2.5;
-  ptri1.a.y =   0; ptri2.a.y =   1;
-  ptri1.a.z =   0; ptri2.a.z =   0;
-  ptri1.b.x = 2.5; ptri2.b.x =   2;
-  ptri1.b.y =   0; ptri2.b.y =   1;
-  ptri1.b.z =   0; ptri2.b.z =   0;
-  ptri1.c.x =   2; ptri2.c.x = 2.5;
-  ptri1.c.y =   1; ptri2.c.y =   0;
-  ptri1.c.z =   0; ptri2.c.z =   0;
+  ptri1.a.x =  -1; ptri2.a.x =  -1;
+  ptri1.a.y =   1; ptri2.a.y =  -1;
+  ptri1.a.z =   1; ptri2.a.z =  -1;
+  ptri1.b.x =  -1; ptri2.b.x =  -1;
+  ptri1.b.y =  -1; ptri2.b.y =   1;
+  ptri1.b.z =  -1; ptri2.b.z =   1;
+  ptri1.c.x =  -1; ptri2.c.x =  -1;
+  ptri1.c.y =  -1; ptri2.c.y =   1;
+  ptri1.c.z =   1; ptri2.c.z =  -1;
 
 
   p.set_tri(0, ptri1);
@@ -97,9 +97,19 @@ int main() {
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      printf("out: %f",model.mesh.tris[0].a.x);
-      // gui::drawPMTri(p.tris[0], colors::color::white);
-      // gui::drawPMTri(p.tris[1], colors::color::white);
+      // gui::drawMTri(     model.mesh.tris[9],model.texture);
+      // printf("out: %f\n",model.mesh.tris[9].a.x);
+      // printf("out: %f\n",model.mesh.tris[9].a.y);
+      // printf("out: %f\n",model.mesh.tris[9].a.z);
+      // printf("out: %f\n",model.mesh.tris[9].b.x);
+      // printf("out: %f\n",model.mesh.tris[9].b.y);
+      // printf("out: %f\n",model.mesh.tris[9].b.z);
+      // printf("out: %f\n",model.mesh.tris[9].c.x);
+      // printf("out: %f\n",model.mesh.tris[9].c.y);
+      // printf("out: %f\n",model.mesh.tris[9].c.z);
+
+      gui::drawPMTri(p.tris[0], colors::white);
+      gui::drawPMTri(p.tris[1], colors::white);
 
       gui::drawFrame();
       

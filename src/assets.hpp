@@ -348,7 +348,17 @@ namespace assets {
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
     for(unsigned int i=0;i<out.mesh.tricount;i++){
-      printf("(%f,%f),(%f,%f),(%f,%f)\n",out.mesh.tris[i].uv0.x,out.mesh.tris[i].uv0.y,out.mesh.tris[i].uv1.x,out.mesh.tris[i].uv1.y,out.mesh.tris[i].uv2.x,out.mesh.tris[i].uv2.y);
+      // printf("(%f,%f),(%f,%f),(%f,%f)\n",out.mesh.tris[i].uv0.x,out.mesh.tris[i].uv0.y,out.mesh.tris[i].uv1.x,out.mesh.tris[i].uv1.y,out.mesh.tris[i].uv2.x,out.mesh.tris[i].uv2.y);
+      printf("(%f,%f,%f),(%f,%f,%f),(%f,%f,%f)\n",
+        out.mesh.tris[i].a.x,
+        out.mesh.tris[i].a.y,
+        out.mesh.tris[i].a.z,
+        out.mesh.tris[i].b.x,
+        out.mesh.tris[i].b.y,
+        out.mesh.tris[i].b.z,
+        out.mesh.tris[i].c.x,
+        out.mesh.tris[i].c.y,
+        out.mesh.tris[i].c.z);
     }
     free(tmp);tmp=NULL;
     free(mesh_fp);free(text_fp);

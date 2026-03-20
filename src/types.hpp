@@ -94,6 +94,41 @@ namespace mesh {
     meshtri* tris;
    ~model_t() noexcept {free(tris);}
   };
+  class Plane{
+    public:
+      meshtri d;
+      meshtri f;
+      vec3<float> pos;
+      vec3<float> rot;
+      vec2<float> scl;
+      void createTris(){
+        d.a.x=x      ;  f.a.x=x      ;
+        d.a.y=y+scl.y;  f.a.y=y-scl.y;
+        d.a.z=z+scl.x;  f.a.z=z-scl.x;
+        d.b.x=x      ;  f.b.x=x      ;
+        d.b.y=y-scl.y;  f.b.y=y+scl.y;
+        d.b.z=z-scl.x;  f.b.z=z+scl.x;
+        d.c.x=x      ;  f.c.x=x      ;
+        d.c.y=y-scl.y;  f.c.y=y+scl.y;
+        d.c.z=z+scl.x;  f.c.z=z-scl.x;
+        
+
+
+      }
+      Plane(float x,float y,float z, float rx, float ry, float rz, float sx, float sy){
+        pos=vec3<float>{x,y,z};
+        rot=vec3<float>{rx,ry,rz};
+        scl=vec2<float>{sx,sy};
+        createTris();
+      }
+      Plane(vec3<float> planepos, vec3<float> planerot, vec2<float> planescl){
+        pos=planepos;
+        rot=planerot;
+        scl=planescl;
+        createTris();
+      }
+
+  };
 }
 namespace assets{
   struct asset3d_t{
