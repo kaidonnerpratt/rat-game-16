@@ -31,7 +31,7 @@ int main() {
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
   mesh::Plane prt_plane(-1,3,0,0,0,0,1,2);
-  portal::Portal p(2);
+  portal::Portal p(mesh::vec3<mesh::mesh_size>{-1,3,0},mesh::vec3<mesh::mesh_size>{-2,0,0},2,'a');
 
   p.set_tri(0, prt_plane.e);
   p.set_tri(1, prt_plane.f);
@@ -79,14 +79,20 @@ int main() {
     }
     if(c){
       gui::clear_scr();
-
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-
-
-      gui::drawPMTri(p.tris[0], colors::green);
-      gui::drawPMTri(p.tris[1], colors::green);
+      gui::drawPMTri(p,0);
+      gui::drawPMTri(p,1);
+      p.pop_buffers();
+      mesh::vec3<mesh::mesh_size> original_cam = mesh::camera_position;
+      p.update_cam(mesh::camera_position);
+      mesh::camera_position = p.portal_cam;
+      for(short unsigned int i=0;i<model.mesh.tricount;i++){
+        gui::drawMTri(model.mesh.tris[i],model.texture);
+      }
+      mesh::camera_position = original_cam;
+      p.cleanup_view();
 
       gui::drawFrame();
       

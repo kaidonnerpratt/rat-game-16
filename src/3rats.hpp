@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <r@@2e.hpp>
 #include <cmath>
+#include <portal.hpp>
 #define SCAST(t,v) static_cast<t>(v)
 #define MESHTRI_OUTLN_01 0b00000001
 #define MESHTRI_OUTLN_12 0b00000010
@@ -230,7 +231,7 @@ namespace gui {
     drawTri(t1, t.uv0, t.uv1, t.uv2, tex);//merge uvs into tri2<float>
   }
   
-  void drawPTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, color_t tricol){
+  void drawPTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2,  unsigned char force_d, char force_c){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
     signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
            x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
@@ -265,14 +266,13 @@ namespace gui {
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/farplanex);
               if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
-                depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
+                depth_buffer[toSSPI(x,y)]=force_d;
                 if(0<depth&&depth<farplanex){
                   float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
                   float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
                   // fprintf(debug,"(%i,%i,%i,%i),",iu,iv,idx,r);
-                  char c = charsbyopacity[(int)(d*opacitylength)];
-                  putChar(x,y,c);
-                  putColor(x,y,tricol);
+                  putChar(x,y,force_c);
+                  putColor(x,y,colors::white);
                 }
               }
             }
@@ -281,7 +281,8 @@ namespace gui {
       }
     }
   }
-  void drawPMTri(const meshtri& t, color_t tricol){
+  void drawPMTri(portal::Portal prtl, int pti){
+    meshtri t = prtl.tris[pti];
     tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
@@ -296,11 +297,11 @@ namespace gui {
         t2.a=clipped[2];
         t2.b=clipped[3];
         t2.c=clipped[0];
-        drawPTri(t2, t.uv0, t.uv1, t.uv2, tricol);
-        }
+        drawPTri(t2, t.uv0, t.uv1, t.uv2, (unsigned char) 255, prtl.key);
+      }
       free(clipped);
     }
-    drawPTri(t1, t.uv0, t.uv1, t.uv2, tricol);//merge uvs into tri2<float>
+    drawPTri(t1, t.uv0, t.uv1, t.uv2, (unsigned char) 255,  prtl.key);//merge uvs into tri2<float>
   }
 }
 #endif
