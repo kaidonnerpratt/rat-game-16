@@ -30,19 +30,8 @@ int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
-  mesh::Plane prt_plane(0,0,0,0,0,0,1,2);
+  mesh::Plane prt_plane(-1,3,0,0,0,0,1,2);
   portal::Portal p(2);
-
-  // ptri1.a.x =  -1; ptri2.a.x =  -1;
-  // ptri1.a.y =   1; ptri2.a.y =  -1;
-  // ptri1.a.z =   1; ptri2.a.z =  -1;
-  // ptri1.b.x =  -1; ptri2.b.x =  -1;
-  // ptri1.b.y =  -1; ptri2.b.y =   1;
-  // ptri1.b.z =  -1; ptri2.b.z =   1;
-  // ptri1.c.x =  -1; ptri2.c.x =  -1;
-  // ptri1.c.y =  -1; ptri2.c.y =   1;
-  // ptri1.c.z =   1; ptri2.c.z =  -1;
-
 
   p.set_tri(0, prt_plane.e);
   p.set_tri(1, prt_plane.f);
@@ -90,25 +79,14 @@ int main() {
     }
     if(c){
       gui::clear_scr();
-      // mesh::vec3<mesh::mesh_size> cstorage = mesh::camera_position;
-      // mesh::camera_position = 
-      
-      // for(short unsigned int i=0;i<model.mesh.tricount;i++){
-      //   gui::drawMTri(model.mesh.tris[i],model.texture);
-      // }
-      // gui::drawMTri(     model.mesh.tris[9],model.texture);
-      // printf("out: %f\n",model.mesh.tris[9].a.x);
-      // printf("out: %f\n",model.mesh.tris[9].a.y);
-      // printf("out: %f\n",model.mesh.tris[9].a.z);
-      // printf("out: %f\n",model.mesh.tris[9].b.x);
-      // printf("out: %f\n",model.mesh.tris[9].b.y);
-      // printf("out: %f\n",model.mesh.tris[9].b.z);
-      // printf("out: %f\n",model.mesh.tris[9].c.x);
-      // printf("out: %f\n",model.mesh.tris[9].c.y);
-      // printf("out: %f\n",model.mesh.tris[9].c.z);
 
-      gui::drawPMTri(p.tris[0], colors::white);
-      gui::drawPMTri(p.tris[1], colors::white);
+      for(short unsigned int i=0;i<model.mesh.tricount;i++){
+        gui::drawMTri(model.mesh.tris[i],model.texture);
+      }
+
+
+      gui::drawPMTri(p.tris[0], colors::green);
+      gui::drawPMTri(p.tris[1], colors::green);
 
       gui::drawFrame();
       
