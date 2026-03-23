@@ -28,13 +28,6 @@ int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
-  // for(unsigned int x=0;x<model.texture.width;x++){
-  //   for(unsigned int y=0;y<model.texture.height;y++){
-  //     fprintf(debug,"(%u,%u,%u,%i),",x,y,(y*model.texture.width+x)*3,model.texture.pixels[(y*model.texture.width+x)*3]);
-  //   }
-  // }
-  // fputc('\n',debug);
-  // fflush(debug);
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
