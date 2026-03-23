@@ -157,12 +157,18 @@ namespace gui {
       x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
     scoord minx=max(min(x0,x1,x2),0),
            miny=max(min(y0,y1,y2),0),
-           maxx=min((scoord)max(x0,x1,x2),gui::term_dims.ws_col),
-           maxy=min((scoord)max(y0,y1,x2),gui::term_dims.ws_row);
+           maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),
+           maxy=min(max(y0,y1,y2),gui::term_dims.ws_row);
     float area=triarea(
       SCAST(float,x0),SCAST(float,y0),
       SCAST(float,x1),SCAST(float,y1),
       SCAST(float,x2),SCAST(float,y2));
+    if(area<0.1){return;}
+    if(logmisc){
+      // PRINT_TRI3(debug,t1,f);
+      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i)),",x0,y0,x1,y1,x2,y2);
+      fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i),(%i,%i)),",minx,miny,maxx,miny,maxx,maxy,minx,maxy);
+    }
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
         vec3<float> barycentric;
