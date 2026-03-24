@@ -30,8 +30,13 @@ int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
-  mesh::Plane prt_plane(-1,3,0,0,0,0,1,2);
-  portal::Portal p(mesh::vec3<mesh::mesh_size>{-1,3,0},mesh::vec3<mesh::mesh_size>{-2,0,0},2,'a');
+  mesh::Plane prt_plane(-5,3,0,0,0,M_PI_2,1,2);
+  mesh::vec3<mesh::mesh_size> pp{-5,3,0};
+  mesh::vec3<char> ppr{0,0,-64};
+  mesh::vec3<mesh::mesh_size> po{-2,0,0};
+  mesh::vec3<char> por{0,0,0};
+
+  portal::Portal p(pp,ppr,po,por,2,'a');
 
   p.set_tri(0, prt_plane.e);
   p.set_tri(1, prt_plane.f);
@@ -86,14 +91,24 @@ int main() {
       gui::drawPMTri(p,1);
       p.pop_buffers();
       mesh::vec3<mesh::mesh_size> original_cam = mesh::camera_position;
-      p.update_cam(mesh::camera_position);
+      mesh::vec3<char> original_cam_r = mesh::camera_rotation;
+
+      p.update_cam(mesh::camera_position,mesh::camera_rotation);
       mesh::camera_position = p.portal_cam;
+      mesh::camera_rotation = p.portal_cam_r;
+
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      mesh::camera_position = original_cam;
       p.cleanup_view();
+      
+      printf("%i\n",(int)mesh::camera_position.x);
+      printf("%i\n",(int)mesh::camera_position.y);
+      printf("%i\n",(int)mesh::camera_position.z);
 
+      mesh::camera_position = original_cam;
+      mesh::camera_rotation = original_cam_r;
+      
       gui::drawFrame();
       
       escapes=0;

@@ -28,6 +28,7 @@ namespace assets {
   };
 }
 
+
 namespace mesh {
   typedef float mesh_size;
   template<typename T> requires arith<T>&&comp<T> struct vec2 {
