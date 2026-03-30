@@ -167,7 +167,7 @@ namespace gui {
     if(logmisc){
       // PRINT_TRI3(debug,t1,f);
       // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i)),",x0,y0,x1,y1,x2,y2);
-      fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i),(%i,%i)),",minx,miny,maxx,miny,maxx,maxy,minx,maxy);
+      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i),(%i,%i)),",minx,miny,maxx,miny,maxx,maxy,minx,maxy);
     }
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
@@ -188,9 +188,9 @@ namespace gui {
           barycentric=barycentric/area;
           float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
           float d=(depth/farplanex);
-          if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
+          if((depth_buffer[toSSPI(x,y)]) > (d*255)){
             depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
-            if(0<depth&&depth<farplanex){
+            if((0<depth)&&(depth<farplanex)){
               float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
               float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
               u*=tex.width; 
@@ -199,11 +199,14 @@ namespace gui {
               int iv=(((int)v%tex.height+tex.height)%tex.height);
               int idx=(iv*tex.width+iu)*3;
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
-              // fprintf(debug,"(%i,%i,%i,%i),",iu,iv,idx,r);
               char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
               char c = charsbyopacity[(int)(d*opacitylength)];
               putChar(x,y,c);
               putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
+            }
+            if(logmisc){
+              // fprintf(debug,"(%u,%u,%f),",x,y,depth);
+              // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
             }
           }
         }

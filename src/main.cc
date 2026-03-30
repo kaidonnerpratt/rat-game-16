@@ -39,7 +39,7 @@ int main() {
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
       case '[' :if(escapes&'\x03'=='\x01'){escapes|='\x02';}continue;
-      case 'q':gui::stop();exit(0);break;
+      case 'q' :gui::stop();exit(0);break;
     }
     if(escapes&'\x03'=='\x03'){
       switch(c){
@@ -54,10 +54,10 @@ int main() {
       // continue;
     }else{
       switch(c){
-        case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;
-        case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;
-        case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;
-        case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;
+        case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;//ari i just looked at these
+        case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;//,,, not a big fan
+        case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;//either put everything on radians
+        case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;//or dont PICK ONE
         case ',':mesh::camera_position.z++;break;
         case '.':mesh::camera_position.z--;break;
         case 'e':logmisc=!logmisc;break;
