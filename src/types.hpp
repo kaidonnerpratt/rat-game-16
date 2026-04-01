@@ -25,6 +25,10 @@ namespace assets {
       }
       // ~texture_t() noexcept {free(pixels);}
   };
+  struct font_t{
+    char sizex,sizey;
+    char* upper,lower,numbers,special;
+  }
 }
 namespace mesh {
   typedef float mesh_size;

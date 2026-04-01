@@ -34,3 +34,5 @@ annoying to do manually and they are:
 oh yeah the texture has to be in ppm format. i that one :100:
 there's also like whitespace. you can put it in a few places.
 if things start breaking, take it out
+you can comment, everything after a # before a newline doesn't
+get parsed

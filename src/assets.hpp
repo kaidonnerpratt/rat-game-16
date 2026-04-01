@@ -4,12 +4,13 @@
 #include <vector>
 #include <cstdlib>
 #include <cstring>
+#include <errno.h>
 #include <type_traits>
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #define DO(x) if(x)
 #define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);
-#define ORDIE(s) {perror(s);ABORT}
-#define ORTHENDIE(c,s) {c;perror(s);ABORT}
+#define ORDIE(s) {if(errno){perror(s);}else{puts(s);}ABORT}
+#define ORTHENDIE(c,s) {c;if(errno){perror(s);}else{puts(s);}ABORT}
 #define FEXPECTL(EXP_STR,EXP_STR_LEN)\
 fgets(tmp,128,file);\
 DO(ferror(file))ORDIE("ferror");i=0;\
@@ -209,12 +210,12 @@ namespace assets {
   }
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(text_fp){free(text_fp);text_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
-    DO(strlen(name)>=128){perror("file name too long");exit(1);}
-    printf("loading asset %s:\n");
+    DO(strlen(name)>=128)ORDIE("file name too long")
+    printf("loading asset %s:\n",name);
     asset3d_t out{};
     FILE* file=fopen(name,"r");
-    char* tmp=(char*)malloc(128);
     DO(!file)ORDIE("couldn't open asset file for read :(")
+    char* tmp=(char*)malloc(128);
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     char* mesh_fp=(char*)calloc(128,1);
     DO(!mesh_fp)ORDIE("couldn't alloc memory for mesh file path for asset")
@@ -375,6 +376,41 @@ namespace assets {
       fputs("\n",file);
     }
     fclose(file);
+  }
+  font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
+    DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
+    printf("loading asset %s:\n",name);
+    FILE* file=fopen(name,"r");
+    DO(!file)ORDIE("couldn't open asset file for read :(")
+    char* tmp=(char*)malloc(128);
+    DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
+    font_t out{};
+    wspace(file,tmp);
+    tmp[readUntil(file,tmp,'x')]='\0';getc(file);
+    out.sizex=atoi(tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.sizey=atoi(tmp);
+    while(!feof(file)){
+      wspace(file,tmp);
+      unsigned int token_length=nspace(file,tmp);
+      DO(!token_length)ORDIE("bad tokens in asset")
+      char* readTo=NULL;
+      if(token_length==14){
+        if(!memcmp(tmp,"alphabet_upper",14)){
+          DO(out.upper)ORDIE("already assigned alphabet_upper")else{readTo=out.upper;}
+        }else if(!memcmp(tmp,"alphabet_lower",14)){
+          DO(out.lower)ORDIE("already assigned alphabet_lower")else{readTo=out.lower;}
+        }
+      }else if(token_length==7){
+        if(!memcmp(tmp,"numbers",7)){
+          
+        }else if(!memcmp(tmp,"special",7)){
+          
+        }
+      }
+    }
+    fclose(file);
+    free(tmp);
   }
 }
 #undef FEXPECTL

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <types.hpp>
 #include <colors.hpp>
 #define DO(x) if(x)
 #define ORDIE(s) {::gui::stop(s);exit(1);}
@@ -148,6 +149,10 @@ namespace gui {
     color_t d=color_buffer[p];
     color_buffer[p]=c;
     return d;
+  }
+
+  void putText(font_t* font,const char* text){
+    //tbd
   }
 
   void drawFrame(){
