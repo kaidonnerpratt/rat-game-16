@@ -1,5 +1,5 @@
 !.gitignore
-a.out
+*.out
 notes
 log.txt
 debug/*
