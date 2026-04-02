@@ -55,7 +55,7 @@ namespace gui {
   void stop(const char* err){
     if(state&STATE_ICLR){return;}
     BRKST(SIGS,
-      printf("\n\rrestoring sigset\n\r");
+      printf("\n\r\x1b""[0mrestoring sigset\n\r");
       if(sigprocmask(SIG_SETMASK,&old_sigset,NULL)==-1){perror("couldn't restore signal set");}
     )
     BRKST(TERM,

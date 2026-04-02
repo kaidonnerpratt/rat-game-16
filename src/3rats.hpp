@@ -151,56 +151,62 @@ namespace gui {
   }
   void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
-    signed short int x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
-           x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
-           x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
+    signed short int
+      x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
+      x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
+      x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
     scoord minx=max(min(x0,x1,x2),0),
            miny=max(min(y0,y1,y2),0),
            maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),
-           maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
+           maxy=min(max(y0,y1,y2),gui::term_dims.ws_row);
     float area=triarea(
-                SCAST(float,x0),SCAST(float,y0),
-                SCAST(float,x1),SCAST(float,y1),
-                SCAST(float,x2),SCAST(float,y2));//i'm about to blow up
+      SCAST(float,x0),SCAST(float,y0),
+      SCAST(float,x1),SCAST(float,y1),
+      SCAST(float,x2),SCAST(float,y2));
+    if(area<0.1){return;}
+    if(logmisc){
+      // PRINT_TRI3(debug,t1,f);
+      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i)),",x0,y0,x1,y1,x2,y2);
+      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i),(%i,%i)),",minx,miny,maxx,miny,maxx,maxy,minx,maxy);
+    }
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
         vec3<float> barycentric;
-        if((barycentric.x=triarea(
+        if(((barycentric.x=triarea(
+          SCAST(float,x), SCAST(float,y),
+          SCAST(float,x1),SCAST(float,y1),
+          SCAST(float,x2),SCAST(float,y2)
+        ))>=0)&&((barycentric.y=triarea(
+          SCAST(float,x0), SCAST(float,y0),
           SCAST(float,x),  SCAST(float,y),
-          SCAST(float,x1), SCAST(float,y1),
           SCAST(float,x2), SCAST(float,y2)
-        ))>=0){
-          if((barycentric.y=triarea(
-            SCAST(float,x0), SCAST(float,y0),
-            SCAST(float,x),  SCAST(float,y),
-            SCAST(float,x2), SCAST(float,y2)
-          ))>=0){
-            if((barycentric.z=triarea(
-              SCAST(float,x0), SCAST(float,y0),
-              SCAST(float,x1), SCAST(float,y1),
-              SCAST(float,x),  SCAST(float,y)
-            ))>=0){
-              barycentric=barycentric/area;
-              float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
-              float d=(depth/farplanex);
-              if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
-                depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
-                if(0<depth&&depth<farplanex){
-                  float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
-                  float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
-                  u*=tex.width; 
-                  v*=tex.height;
-                  int iu=(((int)u%tex.width+tex.width)%tex.width);
-                  int iv=(((int)v%tex.height+tex.height)%tex.height);
-                  int idx=(iv*tex.width+iu)*3;
-                  unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
-                  // fprintf(debug,"(%i,%i,%i,%i),",iu,iv,idx,r);
-                  char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
-                  char c = charsbyopacity[(int)(d*opacitylength)];
-                  putChar(x,y,c);
-                  putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
-                }
-              }
+        ))>=0)&&((barycentric.z=triarea(
+          SCAST(float,x0), SCAST(float,y0),
+          SCAST(float,x1), SCAST(float,y1),
+          SCAST(float,x),  SCAST(float,y)
+        ))>=0)){
+          barycentric=barycentric/area;
+          float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
+          float d=(depth/farplanex);
+          if((depth_buffer[toSSPI(x,y)]) > (d*255)){
+            depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
+            if((0<depth)&&(depth<farplanex)){
+              float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+              float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+              u*=tex.width; 
+              v*=tex.height;
+              int iu=(((int)u%tex.width+tex.width)%tex.width);
+              int iv=(((int)v%tex.height+tex.height)%tex.height);
+              int idx=(iv*tex.width+iu)*3;
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
+              char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
+              char c = charsbyopacity[(int)(d*opacitylength)];
+              putChar(x,y,c);
+              putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
+            }
+            if(logmisc){
+              // fprintf(debug,"(%u,%u,%f),",x,y,depth);
+              // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
             }
           }
         }
@@ -213,7 +219,7 @@ namespace gui {
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
     if(v==3){return;}
     if(v!=0){
-      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);
+      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);//optimize to reuse
       t1.a=clipped[0];
       t1.b=clipped[1];
       t1.c=clipped[2];
