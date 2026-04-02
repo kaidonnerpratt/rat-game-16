@@ -151,8 +151,28 @@ namespace gui {
     return d;
   }
 
-  void putText(font_t* font,const char* text){
-    //tbd
+  void putText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+    scoord x=x1,y=y1;
+    unsigned int last_char=0;
+    for(unsigned int i=0;i<=length;i++){
+      if((text[i]==' ')||(i==length)||(text[i]=='\n')){
+        if((x-x1+(i-last_char))>(width-1)){
+          y++;x=x1;
+          // last_char+=(text[i]=='\n');
+        }
+        // mvwaddnstr(c_win,y,x+1,&text[selstart],i-selstart);
+        memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
+        fprintf(debug,"%.*s\n",i-last_char,&text[last_char]);
+        if(text[i]=='\n'){
+          y++;i++;
+          x=x1;
+        }else{
+          x+=i-last_char;
+        }
+        last_char=i;
+      }
+    }
+    fflush(debug);
   }
 
   void drawFrame(){

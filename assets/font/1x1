@@ -1,9 +1,9 @@
 //default
-alphabet_lower=
+alphabet_lower
 abcdefghijklmnopqrstuvwxyz
-alphabet_upper=
+alphabet_upper
 ABCDEFGHIJKLMNOPQRSTUVWXYZ
-numbers=
+numbers
 1234567890
-special=
+special
 ~!@#$%^&*()-=_+[]\{}|;':",./<>?

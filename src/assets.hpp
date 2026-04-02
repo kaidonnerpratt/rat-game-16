@@ -1,6 +1,6 @@
-#ifndef ASSETS_H
-#define ASSETS_H
-#include <cstdio>
+#ifndef ASSETS_H//i'm a little bit sorry about DO()ORDIE() but
+#define ASSETS_H//like be so real it's pretty cool. i don't
+#include <cstdio>//regret ANYTHING
 #include <vector>
 #include <cstdlib>
 #include <cstring>
@@ -16,7 +16,6 @@ fgets(tmp,128,file);\
 DO(ferror(file))ORDIE("ferror");i=0;\
 while(tmp[i]==' ' || tmp[i]=='\n'){i++;};\
 debug_bad_stl=memcmp(&tmp[i],EXP_STR,EXP_STR_LEN);\
-if(debug_bad_stl){printf("'%.*s'!='%.*s'\n",EXP_STR_LEN,&tmp[i],EXP_STR_LEN,EXP_STR);}\
 DO(debug_bad_stl)
 #define FEXPECTS(EXP_STR,EXP_STR_LEN)\
 DO(fread(tmp,1,EXP_STR_LEN,file)<1){perror("expected to be able to read more");ABORT}\
@@ -71,10 +70,11 @@ namespace assets {
       for(i=0;(i<trinum)&&!feof(file);i++){
         fread(data,12,4,file);
         fseek(file,2,SEEK_CUR);//extra flags we don't really care for
-        tris.push_back((mesh::meshtri){
+        mesh::meshtri tri{
           data[ 3],data[ 4],data[ 5],
           data[ 6],data[ 7],data[ 8],
-          data[ 9],data[10],data[11]});
+          data[ 9],data[10],data[11]};
+        if((tri.c-tri.a).cross(tri.b-tri.a).magnitude()>0.5){tris.push_back(tri);}
       }
     }else{//ascii stl
       unsigned short int l=strlen(&tmp[i]-5);
@@ -119,7 +119,8 @@ namespace assets {
         NSPACEL(i);WSPACEL(i);
         FEXPECTL("endloop",7)ORDIE("expected endloop");
         FEXPECTL("endfacet",8)ORDIE("expected endfacet");
-        tris.push_back((mesh::meshtri){x0,y0,z0,x1,y1,z1,x2,y2,z2});
+        mesh::meshtri tri{x0,y0,z0,x1,y1,z1,x2,y2,z2};
+        if((tri.c-tri.a).cross(tri.b-tri.a).magnitude()>0.5){tris.push_back(tri);}
       }
     }
     free(tmp);
@@ -133,7 +134,7 @@ namespace assets {
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strcat(tmp,filename);perror(tmp);ABORT};
+    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,128);perror(tmp);ABORT};
     int i=0;
     int width, height, maxVal;
     char format=0;
@@ -210,12 +211,12 @@ namespace assets {
   }
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(text_fp){free(text_fp);text_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
-    DO(strlen(name)>=128)ORDIE("file name too long")
+    DO(strlen(name)>=128){perror("file name too long");exit(1);}
     printf("loading asset %s:\n",name);
     asset3d_t out{};
     FILE* file=fopen(name,"r");
-    DO(!file)ORDIE("couldn't open asset file for read :(")
     char* tmp=(char*)malloc(128);
+    DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     char* mesh_fp=(char*)calloc(128,1);
     DO(!mesh_fp)ORDIE("couldn't alloc memory for mesh file path for asset")
@@ -349,9 +350,6 @@ namespace assets {
       }
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
-    for(unsigned int i=0;i<out.mesh.tricount;i++){
-      printf("(%f,%f),(%f,%f),(%f,%f)\n",out.mesh.tris[i].uv0.x,out.mesh.tris[i].uv0.y,out.mesh.tris[i].uv1.x,out.mesh.tris[i].uv1.y,out.mesh.tris[i].uv2.x,out.mesh.tris[i].uv2.y);
-    }
     free(tmp);tmp=NULL;
     free(mesh_fp);free(text_fp);
     fclose(file);file=NULL;
@@ -381,8 +379,8 @@ namespace assets {
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
     printf("loading asset %s:\n",name);
     FILE* file=fopen(name,"r");
-    DO(!file)ORDIE("couldn't open asset file for read :(")
     char* tmp=(char*)malloc(128);
+    DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     font_t out{};
     wspace(file,tmp);
@@ -390,27 +388,33 @@ namespace assets {
     out.sizex=atoi(tmp);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
+    char* readTo=NULL;
+    size_t amt=0;
     while(!feof(file)){
       wspace(file,tmp);
       unsigned int token_length=nspace(file,tmp);
-      DO(!token_length)ORDIE("bad tokens in asset")
-      char* readTo=NULL;
+      DO(!token_length)ORTHENDIE(printf("%s\n",tmp),"bad tokens in asset")
       if(token_length==14){
         if(!memcmp(tmp,"alphabet_upper",14)){
-          DO(out.upper)ORDIE("already assigned alphabet_upper")else{readTo=out.upper;}
+          DO(out.upper)ORDIE("already assigned alphabet_upper")else{out.upper=(char*)malloc((amt=26*out.sizex)*out.sizey);readTo=out.upper;}
         }else if(!memcmp(tmp,"alphabet_lower",14)){
-          DO(out.lower)ORDIE("already assigned alphabet_lower")else{readTo=out.lower;}
+          DO(out.lower)ORDIE("already assigned alphabet_lower")else{out.lower=(char*)malloc((amt=26*out.sizex)*out.sizey);readTo=out.lower;}
         }
       }else if(token_length==7){
         if(!memcmp(tmp,"numbers",7)){
-          
+          DO(out.numbers)ORDIE("already assigned numbers")else{out.numbers=(char*)malloc((amt=10*out.sizex)*out.sizey);readTo=out.numbers;}
         }else if(!memcmp(tmp,"special",7)){
-          
+          DO(out.special)ORDIE("already assigned special")else{out.special=(char*)malloc((amt=31*out.sizex)*out.sizey);readTo=out.special;}
         }
       }
+      DO(readTo){
+        wspace(file,tmp);
+        for(int i=0;i<out.sizey;i++){fread(readTo,1,amt,file);wspace(file,tmp);}
+      }else ORDIE("unknown token :E")
     }
     fclose(file);
     free(tmp);
+    return out;
   }
 }
 #undef FEXPECTL

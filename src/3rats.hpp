@@ -183,7 +183,7 @@ namespace gui {
               barycentric=barycentric/area;
               float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
               float d=(depth/farplanex);
-              if((depth_buffer[toSSPI(x,y)]) > (unsigned char)(d*255)){
+              if((depth_buffer[toSSPI(x,y)])>(d*255)){
                 depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
                 if(0<depth&&depth<farplanex){
                   float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;

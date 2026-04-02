@@ -1,4 +1,4 @@
-model= cube.stl;
+model= hate.stl;
 texture =fried-by-fluoride.ppm;
 #texmap=[
 #  (1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0)
