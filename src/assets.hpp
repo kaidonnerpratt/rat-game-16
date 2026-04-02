@@ -70,10 +70,16 @@ namespace assets {
       for(i=0;(i<trinum)&&!feof(file);i++){
         fread(data,12,4,file);
         fseek(file,2,SEEK_CUR);//extra flags we don't really care for
-        tris.push_back((mesh::meshtri){
+        mesh::meshtri t{
           data[ 3],data[ 4],data[ 5],
           data[ 6],data[ 7],data[ 8],
-          data[ 9],data[10],data[11]});
+          data[ 9],data[10],data[11]};
+        float area=(t.a-t.b).cross(t.a-t.c).magnitude();
+        if(area>0.1){
+          tris.push_back(t);
+        }else{
+          printf("warning: tiny triangle at index %i,area=%f\n",i,area);
+        }
       }
     }else{//ascii stl
       unsigned short int l=strlen(&tmp[i]-5);
@@ -118,7 +124,13 @@ namespace assets {
         NSPACEL(i);WSPACEL(i);
         FEXPECTL("endloop",7)ORDIE("expected endloop");
         FEXPECTL("endfacet",8)ORDIE("expected endfacet");
-        tris.push_back((mesh::meshtri){x0,y0,z0,x1,y1,z1,x2,y2,z2});
+        mesh::meshtri t{x0,y0,z0,x1,y1,z1,x2,y2,z2};
+        float area=(t.a-t.b).cross(t.a-t.c).magnitude();
+        if(area>0.1){
+          tris.push_back(t);
+        }else{
+          printf("warning: tiny triangle at index %i,area=%f\n",i,area);
+        }
       }
     }
     free(tmp);
@@ -199,7 +211,6 @@ namespace assets {
       out.push_back(readV2f(file,tmp));
       char c=fgetc(file);
       if(c!=','){
-        // printf("!!%c:%i!!",c,ftell(file));
         ungetc(c,file);break;
       }
     }
@@ -348,9 +359,6 @@ namespace assets {
       }
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
-    for(unsigned int i=0;i<out.mesh.tricount;i++){
-      printf("(%f,%f),(%f,%f),(%f,%f)\n",out.mesh.tris[i].uv0.x,out.mesh.tris[i].uv0.y,out.mesh.tris[i].uv1.x,out.mesh.tris[i].uv1.y,out.mesh.tris[i].uv2.x,out.mesh.tris[i].uv2.y);
-    }
     free(tmp);tmp=NULL;
     free(mesh_fp);free(text_fp);
     fclose(file);file=NULL;

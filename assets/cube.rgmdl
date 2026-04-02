@@ -1,4 +1,4 @@
-model= cube.stl;
+model= Funky Jarv.stl;
 texture =fried-by-fluoride.ppm;
 #texmap=[
 #  (1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0)
