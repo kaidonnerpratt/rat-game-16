@@ -151,17 +151,18 @@ namespace gui {
     return d;
   }
 
-  void putText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+  void putText(const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
       if((text[i]==' ')||(i==length)||(text[i]=='\n')){
         if((x-x1+(i-last_char))>(width-1)){
           y++;x=x1;
-          // last_char+=(text[i]=='\n');
+          last_char++;
         }
         // mvwaddnstr(c_win,y,x+1,&text[selstart],i-selstart);
         memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
+        memset(&color_buffer[toSSPI(x,y)],default_color,i-last_char);
         fprintf(debug,"%.*s\n",i-last_char,&text[last_char]);
         if(text[i]=='\n'){
           y++;i++;
@@ -172,8 +173,37 @@ namespace gui {
         last_char=i;
       }
     }
-    fflush(debug);
   }
+
+  void putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+    scoord x=x1,y=y1;
+    unsigned int last_char=0;
+    for(unsigned int i=0;i<=length;i++){
+      if((text[i]==' ')||(i==length)||(text[i]=='\n')){
+        if((x-x1+((i-last_char)*font->sizex))>(width-1)){
+          y+=font->sizey;x=x1;
+          last_char++;
+        }
+        // memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],(i-last_char)*font->sizex);
+        for(unsigned int j=last_char;j<i;j++){
+          for(unsigned int k=0;k<font->sizey;k++){
+            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizey)],font->sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
+          }
+          fflush(debug);
+          x+=font->sizex;
+        }
+        // memset(&color_buffer[toSSPI(x,y)],default_color,(i-last_char)*font->sizex);
+        if(text[i]=='\n'){
+          y+=font->sizey;i++;
+          x=x1;
+        }else{
+          // x+=(i-last_char)*font->sizex;
+        }
+        last_char=i;
+      }
+    }
+}
 
   void drawFrame(){
     DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");

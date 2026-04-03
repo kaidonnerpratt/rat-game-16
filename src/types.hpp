@@ -25,9 +25,13 @@ namespace assets {
       }
       // ~texture_t() noexcept {free(pixels);}
   };
+  #define UPPER(f) &f.map[f.sizex*f.sizey*(unsigned char)'A']
+  #define LOWER(f) &f.map[f.sizex*f.sizey*(unsigned char)'a']
+  #define SPECIAL(f) &f.map[f.sizex*f.sizey*(unsigned char)'!']
+  #define NUMBERS(f) &f.map[f.sizex*f.sizey*(unsigned char)'0']
   struct font_t{
     char sizex,sizey;
-    char *upper,*lower,*numbers,*special;
+    char* map;
   };
 }
 namespace mesh {
@@ -97,7 +101,7 @@ namespace mesh {
   struct model_t {
     short unsigned int tricount;
     meshtri* tris;
-   ~model_t() noexcept {free(tris);}
+  // ~model_t() noexcept {free(tris);}
   };
 }
 namespace assets{

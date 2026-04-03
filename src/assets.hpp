@@ -127,7 +127,7 @@ namespace assets {
     tmp=NULL;
     fclose(file);
     file=NULL;
-    printf("%i triangles\n",tris.size());
+    printf("%li triangles\n",tris.size());
     return tris;
   }
   static texture_t readPPM(const char* filename){
@@ -388,6 +388,7 @@ namespace assets {
     out.sizex=atoi(tmp);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
+    out.map=(char*)calloc(out.sizex*out.sizey,256);
     char* readTo=NULL;
     size_t amt=0;
     while(!feof(file)){
@@ -396,21 +397,24 @@ namespace assets {
       DO(!token_length)ORTHENDIE(printf("%s\n",tmp),"bad tokens in asset")
       if(token_length==14){
         if(!memcmp(tmp,"alphabet_upper",14)){
-          DO(out.upper)ORDIE("already assigned alphabet_upper")else{out.upper=(char*)malloc((amt=26*out.sizex)*out.sizey);readTo=out.upper;}
+          amt=26;readTo=UPPER(out);
         }else if(!memcmp(tmp,"alphabet_lower",14)){
-          DO(out.lower)ORDIE("already assigned alphabet_lower")else{out.lower=(char*)malloc((amt=26*out.sizex)*out.sizey);readTo=out.lower;}
+          amt=26;readTo=LOWER(out);
         }
       }else if(token_length==7){
-        if(!memcmp(tmp,"numbers",7)){
-          DO(out.numbers)ORDIE("already assigned numbers")else{out.numbers=(char*)malloc((amt=10*out.sizex)*out.sizey);readTo=out.numbers;}
-        }else if(!memcmp(tmp,"special",7)){
-          DO(out.special)ORDIE("already assigned special")else{out.special=(char*)malloc((amt=31*out.sizex)*out.sizey);readTo=out.special;}
+        if(!memcmp(tmp,"special",7)){
+          amt=32;readTo=SPECIAL(out);
         }
       }
       DO(readTo){
         wspace(file,tmp);
-        for(int i=0;i<out.sizey;i++){fread(readTo,1,amt,file);wspace(file,tmp);}
-      }else ORDIE("unknown token :E")
+        for(unsigned int i=0;i<out.sizey;i++){
+          for(unsigned int j=0;j<amt;j++){
+            fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file);
+          }
+          wspace(file,tmp);
+        }
+      }else ORTHENDIE(/*printf("%u:%.*s:",token_length,token_length,tmp)*/,"unknown token :E")
     }
     fclose(file);
     free(tmp);

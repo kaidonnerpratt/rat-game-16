@@ -29,7 +29,7 @@ int main() {
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
   puts("LOADING FONT");
-  assets::font_t font=assets::readFont("assets/font/1x1");
+  assets::font_t font=assets::readFont("assets/font/2x2");
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
@@ -69,7 +69,7 @@ int main() {
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      gui::putText(&font,"penis!",5,1,1,5);
+      gui::putFText(&font,"According to all known laws of aviation",39,1,1,40);
       gui::drawFrame();
       escapes=0;
     }
