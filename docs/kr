@@ -1,0 +1,185 @@
+.kr (stands for kai reddit)
+
+--
+FOR VERSION 0-0-0 USE ONLY
+--
+
+--- Version layout -- 
+    a - b - c
+
+a : major version, files with the same major version 
+    always have the chance of being backwords 
+    compatable (if they choose not to use new features)
+b : minor version, files with the same minor version
+    use the same number of flags in the header that do
+    the same things. may change layout (but if so, a
+    flag must be added to make the changes toggleable)
+c : working version, changes here don't effect the
+    layout of the file but do slightly effect how its
+    interpreted.
+     
+------ Description -------
+
+kr is used to determin where the player can and can't 
+collide. while kr files are ment to be 1 file per map
+multiple files can be loaded in if needed. however, its
+not reccomended to. the data in a .kr file is meant to 
+be read and edited in a text editor. before useage, 
+please run the compile script to turn this into a .krcf
+file.
+
+this is version 0.0.0.
+
+---- layout ----
+
+the very first line, before ANY WHITESPACE, should be:
+
+version : A-B  
+
+(this does not say crab)
+here, replace A with the major version (0) and B with
+the minor version (0). this makes sure the krcf 
+compiler is in the right version. This is the version
+declaration.
+
+notice: the only whitespace supported in spaces. tabs
+are not supported and newlines are reserved. however,
+you can have multiple newlines in a row. tabs shouldn't
+be an issue on a modern code editor though becouse they
+usualy get reformated to spaces. spaces cannot be put
+inbetween words, numbers, or anything else that seems
+wrong. use newlines to seperate different instructions.
+any spaces used in the examples can be removed or
+expanded.
+
+notice: using a "#" anywhere will ignore anything that
+comes after it on the same line, like a comment. these
+will not get compiled and do not matter.
+
+includeing the version declaration, the layout is as
+follows:
+
+1. version declaration
+2. file information
+3. data
+
+---- file information ----
+
+the information header comes after the version
+declaration, and sets all the importent data needed for
+the kr file to compile. each "equasion" is formated
+as so:
+
+NAME = VALUE
+
+note that most things have defaults. if it has a
+default, then it is not required to be set and the
+default will be used instead.
+
+-------------------------------------------------------
+|   name   | value type | description                 |
+|----------|------------|-----------------------------|
+| INT_SIZE |   uint8    | sets the amount of bytes    |
+|          |            | per intager for the rest of |
+|          |            | the file, unless said       |
+|          |            | otherwise. (default:1)      |
+-------------------------------------------------------
+
+* yes, there is only one value here now but there might
+  be more in the future
+
+---- data ----
+
+after the file information, you will need to put a line
+of data to let the compiler know it is now reading data
+
+this is formated as so:
+
+COLLISION_DATA :
+
+note: nothing comes after the colon (exept for spaces)
+maybe. and also a newline, you need a newline after the
+colon.
+
+then, for each shape you want to use you write its type
+first. this can either be defined with --TYPE to use a
+named type of >>type to use a ID type (uint). you can't
+have both. see:
+
+-- TYPE
+>> type
+
+next, on a newline is the position and rotation. use:
+
+POS = { valuex , valuey , valuez }
+ROT = { valuex , valuey , valuez }
+
+where valuex, valuey, and valuez are replaced wiht the
+x, y and z rotation and position. these cannot be 
+split into a newline. 
+
+NOTICE: shape TRIANGLE or ID 0 will NOT use rot,
+insted skipping directly to the paramiters. (however,
+pos will still be used)
+
+next, on a newline, is the paramiters. starting the
+list of paramiters is indicated by "PARAMITERS = {" 
+a matching "}" is expected when the list of paramiters
+finish. inbetween the parentices are a list of the 
+paramiters used, exept position and rotation. formated
+like so:
+
+PARAMITERS = {
+    PARAMITER : VALUE
+    PARAMITER : VALUE
+}
+
+each new paramiter must be on a new line, will NOT be
+seperated with a comma, and the opening PARAMITERS = {
+must have a newline directly after it (or a few spaces
+after it) and the matching } must be on a new line and
+cannot have anthing after it like the opening one.
+
+that defines one shape. alltogether, the total shape
+definition looks like:
+
+--TYPE
+POS = { valuex , valuey , valuez }
+ROT = { valuex , valuey , valuez }
+PARAMITERS = {
+    PARAMITER : VALUE
+    PARAMITER : VALUE
+}
+
+a note about paramiters: while in the shape tables, 
+their names are lowercase, in the file the must be all
+upercase.
+
+the next shape definition can be on the next line after
+that, or the end of the file.
+
+HOWEVER, another way to put data in is by useing 
+LOADFROM_STL. this does not require useing --type, pos,
+rot, and paramiters. in fact, they are prohibited.
+useing LOADFROM_STL insted of a shape definition can
+look like:
+
+LOADFROM_STL( "filename" )
+
+as a note: LOADFROM_STL will ONLY use triangles. this,
+while convient, is ineffecent so its reccomended to 
+use a normal shape definition as it can be quicker.
+
+also, you must replace filename with the name of the
+file you want to load from. it must be in quotes and it
+must be the exact filename, no extra spaces, newlines,
+and absolutely no quotation marks. if the file has 
+quotes in its name, rename the file.
+
+
+
+---- shape tables ----
+
+for the shape tables, look at the bottom of the krcf
+docs. remember to capitilize the names!
+
