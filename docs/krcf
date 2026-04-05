@@ -1,7 +1,7 @@
 .krcf (stands for kai reddit collision format)
 
 --
-FOR VERSION 1-0-0 USE ONLY
+FOR VERSION 0-0-0 USE ONLY
 --
 
 --- Version layout -- 
@@ -26,15 +26,13 @@ multiple files can be loaded in if needed. however, its
 not reccomended to. the data in a .krcf file is ment to 
 be read in a hex editor. 
 
-this is version 1.0.0.
+this is version 0.0.0.
 
 ---- layout ------
 the krcf format has 5 main parts.
 
 1. header       (CF)
-2. signal dict  (DS) 
-3. group dict   (DG)
-4. mod dict     (DM)  
+2. shape dict   (DS) 
 5. data         (CD)  
 6. footer       (FT)
 
@@ -45,16 +43,13 @@ over it until a known magic number is found.
 At the start of each header, a magic number is present.
 This magic number will always start with 4B 52 and will
 end with something unique to identify what part it is.
-such identifyers are in parenthises. please note that
-for the signal dict, group dict, and mod dict, the 
-identifyers will appeare one time for each entry.
+such identifyers are in parenthises.
 As a note: strings of hex with a unknown length 
 always end in 4B 52 hex "KR" ascii
 
----- HEADER (8 bytes)----
+---- HEADER (16 bytes)----
 Each krcf file starts with a krcf header,
 where each part is shown here:
-
 
 -------------------------------------------------------
 | offset | bytes  | description                       |
@@ -66,76 +61,20 @@ where each part is shown here:
 |--------|--------|-----------------------------------|
 |   5    |   1    | krcf minor version.               |
 |--------|--------|-----------------------------------|
-|   6    |   2    | Signals. this value must be AT    |
-|        |        | LEAST 1. otherwise collision wont |
-|        |        | be detected.                      |
+|   6    |   2    | Shapes. this value determines the |
+|        |        | number of shapes in the file.     |
 |--------|--------|-----------------------------------|
-|   8    |   2    | Groups. Amount of groups.         |
+|   8    |   1    | Amount of bytes used per each     |
+|        |        | paramiter in the shape data       |
 |--------|--------|-----------------------------------|
-|   10   |   1    | Modifyers. Amount of custom       |
-|        |        | modifyers.                        |
-|--------|--------|-----------------------------------|
-|   11   |   1    | Flags   0  [see: Flags 0]         |
-|--------|--------|-----------------------------------|
-|   12   |   8    | Flags 1-8 (unused)                |
+|   9    |   7    | Flags 0-6  (unused)               |
 -------------------------------------------------------
 
----- Flags 0 (1 byte)----
+---- Shape dict header(6+s bytes)----
 
-Flag 0.0 : dont use collision
-Flag 0.1 : dont use signals
-Flag 0.2 : dont use groups
-Flag 0.3 : dont use 3d mode
-Flag 0.4 : dont use modifiers
-Flag 0.5 : static collision
-Flag 0.6 : dont pass signal values
-Flag 0.7 : incompatable with minor version 0
-
-76543210
-|||||||+- 0: by default, signal id [0] will be reserved
-|||||||      to signal "collision", and will return
-|||||||      the default data.
-|||||||   1: signal id [0] will be free to be used by
-|||||||      any other signal. 
-||||||+-- 0: the signal dictonary header will be used
-||||||       and required. signal data will not be
-||||||       skipped over when makeing the file.
-||||||    1: the signal dictonary header won't be used
-||||||       signal data will be skipped over when 
-||||||       makeing the file.
-|||||+--- 0: the group dictonary header will be used
-|||||        and required. group data will not be
-|||||        skipped over when makeing the file.
-|||||     1: the group dictonary header won't be used
-|||||        group data will be skipped over when 
-|||||        makeing the file. 
-||||+---- 0: collisions will be defined in xyz space.
-||||      1: collisions will be defined in xy space.
-|||+----- 0: the modifier dictonary header will be used
-|||          and required. modifier data will not be
-|||          skipped over when makeing the file.
-|||       1: the modifier dictonary header won't be
-|||          used. modifier data will be skipped over 
-|||          when makeing the file. 
-||+------ 0: collision data can be toggled on and off
-||           during game.
-||        1: collision data cannot be toggled.
-|+------- 0: signal values will be used during signal
-|            collisions.
-|         1: signal values cannont be passed and wont
-|            be used for signal collisions
-+-------- 0: this file will run
-          1: this file will not run.
-
-
----- Signal dict header(7+n bytes)----
-
-this header will appear onece for each signal. Please
-note that if signal ID is 0 and flag 0.1 is not true,
-then the entry will abruptly end. note that in future
-versions unused data can be added onto the end, so 
-wait for the next dict header or section header to
-appear before continuing.
+this header will appear once, and contain an array
+defineing all the used shapes in order. directly after
+this header, there must be the data chunk.
 
 -------------------------------------------------------
 | offset | bytes  | description                       |
@@ -143,79 +82,21 @@ appear before continuing.
 |   0    |   4    | Magic Number. Must be 4B 52 44 53 |
 |        |        | in hex. reads "KRDS" in ascii     |
 |--------|--------|-----------------------------------|
-|   4    |   2    | Signal ID. must be unique.        |
+|   4    |   s*   | Array of shape IDs.               |
+|        |        | [see: shape table]                |
 |--------|--------|-----------------------------------|
-|   6    |   1    | Signal name length (n)            |
-|--------|--------|-----------------------------------|
-|   7    |   n    | Signal name, in ascii             |
-|--------|--------|-----------------------------------|
-|   7+n  |   2    | Magic Number. Must Be 4B 52 in    |
+|  4+s   |   2    | Magic Number. Must Be 4B 52 in    |
 |        |        | hex. reads "KR" in ascii.         |
 -------------------------------------------------------
 
----- Group dict header(7+n bytes)----
+* here, [s] represents the amount of shapes defined in
+  the header (offset 6, 2 bytes)
 
-this header will appear onece for each group. note that 
-in future versions unused data can be added onto the end
-so wait for the next dict header or section header to
-appear before continuing. As a note: if a group name
-starts with a exclemation point, then it will start 
-toggled off, and the exclemation point will be removed
-from the name.
 
--------------------------------------------------------
-| offset | bytes  | description                       |
-|--------|--------|-----------------------------------|
-|   0    |   4    | Magic Number. Must be 4B 52 44 57 |
-|        |        | in hex. reads "KRDG" in ascii     |
-|--------|--------|-----------------------------------|
-|   4    |   2    | Group ID. must be unique.         |
-|--------|--------|-----------------------------------|
-|   6    |   1    | Group name length (n)             |
-|--------|--------|-----------------------------------|
-|   7    |   n    | Group name, in ascii              |
-|--------|--------|-----------------------------------|
-|   7+n  |   2    | Magic Number. Must Be 4B 52 in    |
-|        |        | hex. reads "KR" in ascii.         |
--------------------------------------------------------
+---- Data header (8 bytes)----
 
----- Modifyer dict header(7+n bytes)----
-
-this header will appear onece for each modifyer. note
-that in future versions unused data can be added onto 
-the end so wait for the next dict header or section 
-header to appear before continuing.
-
--------------------------------------------------------
-| offset | bytes  | description                       |
-|--------|--------|-----------------------------------|
-|   0    |   4    | Magic Number. Must be 4B 52 44 4D |
-|        |        | in hex. reads "KRDM" in ascii     |
-|--------|--------|-----------------------------------|
-|   4    |   2    | Modifyer ID. must be unique.      |
-|--------|--------|-----------------------------------|
-|   6    |   1    | Modifyer name length (n)          |
-|--------|--------|-----------------------------------|
-|   7    |   n    | Modifyer name, in ascii           |
-|--------|--------|-----------------------------------|
-|   7+n  |   2    | Magic Number. Must Be 4B 52 in    |
-|        |        | hex. reads "KR" in ascii.         |
--------------------------------------------------------
-
----- Data header (13+2s+2g+m bytes)----
-
-the data header will appear multiple times, and it will
-define how the colliders should act. the data header
-will define what signals to give out, what modifyers to
-use, and more. when the data header is redefined all of
-thease things are redefined as well.
-define many importent things regarding to data as well
-as have the data chunk directly after it. the data
-chunk and data header are both included in the data
-part. Importent note : if the 0.6 flag is true, then
-each signal id will take up 2 bytes. otherwise
-it will take up 3, with the third being the signal 
-value.
+the data header will appear exactly once. this header
+will define the amount of bytes the data takes up.
 
 -------------------------------------------------------
 | offset | bytes  | description                       |
@@ -223,47 +104,28 @@ value.
 |   0    |   4    | Magic Number. Must be 4B 52 43 44 |
 |        |        | in hex. reads "KRCD" in ascii     |
 |--------|--------|-----------------------------------|
-|   4    |   4    | Amount of colliders (d)           |
-|--------|--------|-----------------------------------|
-|   8    |   2    | Amount of signals   (s)           |
-|--------|--------|-----------------------------------|
-|   10   |   2    | Amount of groups    (g)           |
-|--------|--------|-----------------------------------|
-|   12   |   1    | Amount of modifiers (m)           |
-|--------|--------|-----------------------------------|
-|   13   |   3s   | Signal id's, each entry being 3   |
-|        |        | bytes long, with s entrys         |
-|--------|--------|-----------------------------------|
-|  13+3s |   2g   | Group id's, each entry being 2    |
-|        |        | bytes long, with g entrys         |
-|--------|--------|-----------------------------------|
-|13+3s+2g|   m    | Modifyer id's, each entry being 1 |
-|        |        | byte long, with m entrys          |
+|   4    |   4    | Amount of bytes used (d)          |
 -------------------------------------------------------
 
---- data chunk (??? bytes) ----
+--- data chunk (2+s*b) ----
 
 will appeare multiple times, each one represending
-a different shape.
-note: size of ? depends on shape table. see: shape
-tables.
+a different shape. Comes directly after the data header
 
 -------------------------------------------------------
 | offset | bytes  | description                       |
 |--------|--------|-----------------------------------|
-|   0    |   4    | Magic Number. Must be 4B 52 43 43 |
-|        |        | in hex. reads "KRCC" in ascii     |
-|--------|--------|-----------------------------------|
-|   4    |   1    | collision shape [see: shape       |
-|        |        | tables]                           |
-|--------|--------|-----------------------------------|
-|   5    |   ?    | collision shape data entrys. each |
+|   0    |  s*b   | collision shape data entrys. each |
 |        |        | entry sizes depend on the shape   |
 |--------|--------|-----------------------------------|
-|   5+?  |   2    | Magic Number. Must Be 4B 52 in    |
+|  s*b   |   2    | Magic Number. Must Be 4B 52 in    |
 |        |        | hex. reads "KR" in ascii.         |
 -------------------------------------------------------
 
+* here, [s] represents the amount of paramiters the
+  shape uses. this can be found in the shape table.
+* here, [b] represents the amount of bytes each number
+  uses. found in the header (offset 8, 2 bytes)
 
 -- footer (12 bytes) -- 
 
@@ -281,36 +143,54 @@ comes once, at the end of all the data.
 
 -- shape tables --
 
-each shape id comes with a amount of 1 byte paramiters,
+each shape id comes with a amount of paramiters,
 what they do, and more! more to come in future minor
-versions.
+versions. the amount of paramiters will always be at 
+least 6, 3 for position and 3 for rotation, so those
+should automaticly be assumed. the amount of paramiters
+listed heare does not include to 6 assumed paramiters.
+
+NOTE ABOUT TRIANGLES:
+this holds true for all shapes with the exeption of the
+shape id 00, or the triangle, becouse it does not have
+3 paramiters for rotation, insted it has 9 total 
+paramiters in sets of 3. each "set" being 3 paramiters
+of x, y, and z for each point in the triangle. however,
+triangles are not reccomended to be used.
 
 -------------------------------------------------------
-| ID | params | description                           |
-|----|--------|---------------------------------------|
-| 00 |   8    | plane, takes in 2 vec3s for pos and   | 
-|    |        | rot and a single vec2 for width and   |
-|    |        | height                                |
-|----|--------|---------------------------------------|
-| 01 |   7    | cube, takes in 2 vec3s for pos and    |
-|    |        | rot, and a single value for size      |
-|----|--------|---------------------------------------|
-| 01 |   9    | rect, takes in 3 vec3s for pos, rot   |
-|    |        | and size                              |
+| ID | name      | Paramiters                         |
+|----|-----------|------------------------------------|
+| 00 | triangle  | see above                          |
+|----|-----------|------------------------------------|
+| 01 | plane     | 2: width, height                   |
+|----|-----------|------------------------------------|
+| 02 | cube      | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 03 | tunnel    | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 04 | hole      | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 05 | hole_flat | 6: width, height, hole_w, hole_h   |
+|    |           |    hole_x, hole_y                  |
+|----|-----------|------------------------------------|
+| 06 | hotdog    | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 07 | corner    | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 08 | wallfloor | 3: width, length, height           |
+|----|-----------|------------------------------------|
+| 09 | room      | 3: width, length, height           |
 -------------------------------------------------------
 
+Notes: most shapes (ID 01 to 04, and 06 to 09) take the
+form of a cube. this means that they act like a hollow
+cube, (or room) but with sides removed.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+tunnel    : cube with the front and back gone.
+hotdog    : tunnel with no roof
+corner    : cube with top, right wall, and front gone.
+wallfloor : corner with no back wall.
+hole      : cube with no top
+hole_flat : plane with a hole in it (pos of hole
+            relitive to the planes position)
