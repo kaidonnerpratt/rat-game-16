@@ -190,8 +190,11 @@ namespace gui {
             memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizey)],font->sizex);
             memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
           }
-          fflush(debug);
           x+=font->sizex;
+        }
+        if(x<x1){
+          fprintf(debug,"%u,%u/%u:%c\n",x,y,i,text[i]);
+          fflush(debug);
         }
         // memset(&color_buffer[toSSPI(x,y)],default_color,(i-last_char)*font->sizex);
         if(text[i]=='\n'){

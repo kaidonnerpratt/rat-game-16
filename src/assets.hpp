@@ -397,12 +397,15 @@ namespace assets {
       DO(!token_length)ORTHENDIE(printf("%s\n",tmp),"bad tokens in asset")
       if(token_length==14){
         if(!memcmp(tmp,"alphabet_upper",14)){
+          puts("alphabet_upper");
           amt=26;readTo=UPPER(out);
         }else if(!memcmp(tmp,"alphabet_lower",14)){
+          puts("alphabet_lower");
           amt=26;readTo=LOWER(out);
         }
       }else if(token_length==7){
         if(!memcmp(tmp,"special",7)){
+          puts("alphabet_special");
           amt=32;readTo=SPECIAL(out);
         }
       }
@@ -414,8 +417,9 @@ namespace assets {
           }
           wspace(file,tmp);
         }
-      }else ORTHENDIE(/*printf("%u:%.*s:",token_length,token_length,tmp)*/,"unknown token :E")
+      }else ORDIE("unknown token :E")
     }
+    memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
     fclose(file);
     free(tmp);
     return out;

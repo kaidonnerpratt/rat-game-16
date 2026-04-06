@@ -1,8 +1,8 @@
-//default
+#default
 1x1
-alphabet_lower
-abcdefghijklmnopqrstuvwxyz
 alphabet_upper
 ABCDEFGHIJKLMNOPQRSTUVWXYZ
+alphabet_lower
+abcdefghijklmnopqrstuvwxyz
 special
 !"#$%&'()*+`-./0123456789:;<=>?@

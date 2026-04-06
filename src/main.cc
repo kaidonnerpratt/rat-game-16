@@ -29,7 +29,7 @@ int main() {
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
   puts("LOADING FONT");
-  assets::font_t font=assets::readFont("assets/font/2x2");
+  assets::font_t font=assets::readFont("assets/font/1x1");
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
