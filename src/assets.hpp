@@ -385,11 +385,13 @@ namespace assets {
     fclose(file);
   }
 }
+#ifndef KEEP_DEF
 #undef FEXPECTL
 #undef NOFERR
 #undef WSPACEL
 #undef NSPACEL
 #undef DO
 #undef ORDIE
+#endif
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 #endif
