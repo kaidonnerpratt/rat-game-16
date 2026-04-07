@@ -179,13 +179,11 @@ triangles are not reccomended to be used.
 | 07 | corner    | 3: width, length, height           |
 |----|-----------|------------------------------------|
 | 08 | wallfloor | 3: width, length, height           |
-|----|-----------|------------------------------------|
-| 09 | room      | 3: width, length, height           |
 -------------------------------------------------------
 
-Notes: most shapes (ID 01 to 04, and 06 to 09) take the
+Notes: most shapes (ID 02 to 04, and 06 to 08) take the
 form of a cube. this means that they act like a hollow
-cube, (or room) but with sides removed.
+cube but with sides removed.
 
 tunnel    : cube with the front and back gone.
 hotdog    : tunnel with no roof

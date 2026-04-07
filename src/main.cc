@@ -29,6 +29,14 @@ int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
   assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
+  puts("LOADING COLLISION");
+  mesh::cshape_t cshape(mesh::CUBE);
+  cshape.pos={0,0,0};
+  cshape.rot={0,0,0};
+  cshape.size={1,1,1};
+
+  printf("colresult: %i\n",cshape.colliding({0,0.,0},2));
+  // assets::readCollisonMap3d("assets/test.kr");
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;

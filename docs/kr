@@ -34,7 +34,7 @@ this is version 0.0.0.
 
 the very first line, before ANY WHITESPACE, should be:
 
-version : A-B  
+VERSION ( 0 , 0 ) ;
 
 (this does not say crab)
 here, replace A with the major version (0) and B with
@@ -43,12 +43,13 @@ compiler is in the right version. This is the version
 declaration.
 
 notice: the only whitespace supported in spaces. tabs
-are not supported and newlines are reserved. however,
+and newlines should not be used for formatting. however,
 you can have multiple newlines in a row. tabs shouldn't
 be an issue on a modern code editor though becouse they
 usualy get reformated to spaces. spaces cannot be put
 inbetween words, numbers, or anything else that seems
-wrong. use newlines to seperate different instructions.
+wrong. use semicolons, along with newlines, in order
+to seperate different instructions.
 any spaces used in the examples can be removed or
 expanded.
 
@@ -70,7 +71,7 @@ declaration, and sets all the importent data needed for
 the kr file to compile. each "equasion" is formated
 as so:
 
-NAME = VALUE
+NAME = VALUE ;
 
 note that most things have defaults. if it has a
 default, then it is not required to be set and the
@@ -79,10 +80,10 @@ default will be used instead.
 -------------------------------------------------------
 |   name   | value type | description                 |
 |----------|------------|-----------------------------|
-| INT_SIZE |   uint8    | sets the amount of bytes    |
-|          |            | per intager for the rest of |
-|          |            | the file, unless said       |
-|          |            | otherwise. (default:1)      |
+| USE_STLS |   bool     | if the variable is true,    |
+|          |            | then .stl files can be      |
+|          |            | loaded in with LOADFROM_STL |
+|          |            | Default : false             |
 -------------------------------------------------------
 
 * yes, there is only one value here now but there might
@@ -104,15 +105,15 @@ colon.
 then, for each shape you want to use you write its type
 first. this can either be defined with --TYPE to use a
 named type of >>type to use a ID type (uint). you can't
-have both. see:
+have both. Do not use semicolon. see:
 
 -- TYPE
 >> type
 
 next, on a newline is the position and rotation. use:
 
-POS = { valuex , valuey , valuez }
-ROT = { valuex , valuey , valuez }
+POS = { valuex , valuey , valuez } ;
+ROT = { valuex , valuey , valuez } ;
 
 where valuex, valuey, and valuez are replaced wiht the
 x, y and z rotation and position. these cannot be 
@@ -130,11 +131,11 @@ paramiters used, exept position and rotation. formated
 like so:
 
 PARAMITERS = {
-    PARAMITER : VALUE
+    PARAMITER : VALUE ,
     PARAMITER : VALUE
 }
 
-each new paramiter must be on a new line, will NOT be
+each new paramiter must be on a new line, will be
 seperated with a comma, and the opening PARAMITERS = {
 must have a newline directly after it (or a few spaces
 after it) and the matching } must be on a new line and
@@ -144,11 +145,11 @@ that defines one shape. alltogether, the total shape
 definition looks like:
 
 --TYPE
-POS = { valuex , valuey , valuez }
-ROT = { valuex , valuey , valuez }
+POS = { valuex , valuey , valuez } ;
+ROT = { valuex , valuey , valuez } ;
 PARAMITERS = {
-    PARAMITER : VALUE
-    PARAMITER : VALUE
+    PARAMITER : VALUE ,
+    PARAMITER : VALUE 
 }
 
 a note about paramiters: while in the shape tables, 
@@ -164,7 +165,7 @@ rot, and paramiters. in fact, they are prohibited.
 useing LOADFROM_STL insted of a shape definition can
 look like:
 
-LOADFROM_STL( "filename" )
+LOADFROM_STL( "filename" ) ;
 
 as a note: LOADFROM_STL will ONLY use triangles. this,
 while convient, is ineffecent so its reccomended to 
