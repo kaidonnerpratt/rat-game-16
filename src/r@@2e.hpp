@@ -160,10 +160,8 @@ namespace gui {
           y++;x=x1;
           last_char++;
         }
-        // mvwaddnstr(c_win,y,x+1,&text[selstart],i-selstart);
         memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
         memset(&color_buffer[toSSPI(x,y)],default_color,i-last_char);
-        fprintf(debug,"%.*s\n",i-last_char,&text[last_char]);
         if(text[i]=='\n'){
           y++;i++;
           x=x1;
@@ -184,24 +182,16 @@ namespace gui {
           y+=font->sizey;x=x1;
           last_char++;
         }
-        // memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],(i-last_char)*font->sizex);
         for(unsigned int j=last_char;j<i;j++){
           for(unsigned int k=0;k<font->sizey;k++){
-            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizey)],font->sizex);
+            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizex)],font->sizex);
             memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
           }
           x+=font->sizex;
         }
-        if(x<x1){
-          fprintf(debug,"%u,%u/%u:%c\n",x,y,i,text[i]);
-          fflush(debug);
-        }
-        // memset(&color_buffer[toSSPI(x,y)],default_color,(i-last_char)*font->sizex);
         if(text[i]=='\n'){
           y+=font->sizey;i++;
           x=x1;
-        }else{
-          // x+=(i-last_char)*font->sizex;
         }
         last_char=i;
       }

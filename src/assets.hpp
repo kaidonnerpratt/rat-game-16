@@ -405,21 +405,26 @@ namespace assets {
         }
       }else if(token_length==7){
         if(!memcmp(tmp,"special",7)){
-          puts("alphabet_special");
+          puts("special");
           amt=32;readTo=SPECIAL(out);
         }
       }
       DO(readTo){
-        wspace(file,tmp);
+        getc(file);
         for(unsigned int i=0;i<out.sizey;i++){
           for(unsigned int j=0;j<amt;j++){
             fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file);
           }
-          wspace(file,tmp);
+          getc(file);
         }
       }else ORDIE("unknown token :E")
     }
     memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
+    if(*UPPER(out)&&!*LOWER(out)){
+      memcpy(LOWER(out),UPPER(out),26*out.sizex*out.sizey);
+    }else if(!*UPPER(out)){
+      memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
+    }
     fclose(file);
     free(tmp);
     return out;
