@@ -29,6 +29,8 @@ namespace assets {
   #define LOWER(f) &f.map[f.sizex*f.sizey*(unsigned char)'a']
   #define SPECIAL(f) &f.map[f.sizex*f.sizey*(unsigned char)'!']
   #define NUMBERS(f) &f.map[f.sizex*f.sizey*(unsigned char)'0']
+  #define SPECIAL2(f) &f.map[f.sizex*f.sizey*(unsigned char)'[']
+  #define SPECIAL3(f) &f.map[f.sizex*f.sizey*(unsigned char)'{']
   struct font_t{
     char sizex,sizey;
     char* map;

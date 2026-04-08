@@ -177,6 +177,17 @@ namespace gui {
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
+      if(((i-last_char+1)*font->sizex+x1)>width){
+        for(unsigned int j=last_char;j<i;j++){
+          for(unsigned int k=0;k<font->sizey;k++){
+            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizex)],font->sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
+          }
+          x+=font->sizex;
+        }
+        x=x1;y+=font->sizey;last_char=i;
+        continue;
+      }
       if((text[i]==' ')||(i==length)||(text[i]=='\n')){
         if((x-x1+((i-last_char)*font->sizex))>(width-1)){
           y+=font->sizey;x=x1;

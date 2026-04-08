@@ -8,7 +8,7 @@
 #include <type_traits>
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #define DO(x) if(x)
-#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);
+#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};asm("int3; nop");
 #define ORDIE(s) {if(errno){perror(s);}else{puts(s);}ABORT}
 #define ORTHENDIE(c,s) {c;if(errno){perror(s);}else{puts(s);}ABORT}
 #define FEXPECTL(EXP_STR,EXP_STR_LEN)\
@@ -391,33 +391,43 @@ namespace assets {
     out.map=(char*)calloc(out.sizex*out.sizey,256);
     char* readTo=NULL;
     size_t amt=0;
+    wspace(file,tmp);
     while(!feof(file)){
-      wspace(file,tmp);
       unsigned int token_length=nspace(file,tmp);
       DO(!token_length)ORTHENDIE(printf("%s\n",tmp),"bad tokens in asset")
       if(token_length==14){
         if(!memcmp(tmp,"alphabet_upper",14)){
-          puts("alphabet_upper");
           amt=26;readTo=UPPER(out);
         }else if(!memcmp(tmp,"alphabet_lower",14)){
-          puts("alphabet_lower");
           amt=26;readTo=LOWER(out);
         }
       }else if(token_length==7){
         if(!memcmp(tmp,"special",7)){
-          puts("special");
           amt=32;readTo=SPECIAL(out);
+        }
+      }else if(token_length==8){
+        if(!memcmp(tmp,"special2",8)){
+          amt=6;readTo=SPECIAL2(out);
+        }else if(!memcmp(tmp,"special3",8)){
+          amt=4;readTo=SPECIAL3(out);
         }
       }
       DO(readTo){
-        getc(file);
+        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %i after %.*s!\n",ftell(file),token_length,tmp),"bad read")
+        int total_read=0;
         for(unsigned int i=0;i<out.sizey;i++){
           for(unsigned int j=0;j<amt;j++){
-            fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file);
+            DO((token_length=fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file))!=out.sizex)
+            ORTHENDIE(
+              printf("did't get enough characters: %i/%i at %i:(%i,%i):%i\n",
+                token_length,out.sizex,ftell(file),j,i,amt)
+              ,"bad read")
+            total_read+=token_length;
           }
           getc(file);
         }
       }else ORDIE("unknown token :E")
+      wspace(file,tmp);
     }
     memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
     if(*UPPER(out)&&!*LOWER(out)){
