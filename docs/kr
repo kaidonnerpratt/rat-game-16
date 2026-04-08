@@ -133,7 +133,7 @@ like so:
 PARAMITERS = {
     PARAMITER : VALUE ,
     PARAMITER : VALUE
-}
+} ;
 
 each new paramiter must be on a new line, will be
 seperated with a comma, and the opening PARAMITERS = {
@@ -150,7 +150,7 @@ ROT = { valuex , valuey , valuez } ;
 PARAMITERS = {
     PARAMITER : VALUE ,
     PARAMITER : VALUE 
-}
+} ;
 
 a note about paramiters: while in the shape tables, 
 their names are lowercase, in the file the must be all

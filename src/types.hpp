@@ -56,6 +56,35 @@ namespace mesh {
     template<typename U> auto constexpr cross(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>()-std::declval<T>()*std::declval<U>())>){y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x};}
     auto constexpr magnitude()const{return sqrt((x*x)+(y*y)+(z*z));}
     template<typename U> T dot(vec3<U> o){return x*o.x+y*o.y+z*o.z;}
+    void limit(T n){
+      if (x > n){x= n;}
+      if (x <-n){x=-n;}
+      if (y > n){y= n;}
+      if (y <-n){y=-n;}
+      if (z > n){z= n;}
+      if (z <-n){z=-n;}
+    }
+    T dist(){return sqrt(x*x+y*y+z*z);}
+    void normalize(){
+      float mag = sqrt(x*x+y*y+z*z);
+      x/=mag;
+      y/=mag;
+      z/=mag; 
+    }
+    vec3<T> normalized(){
+      float mag = sqrt(x*x+y*y+z*z);
+      float nx = x/mag;
+      float ny = y/mag;
+      float nz = z/mag; 
+      return vec3<T>{nx,ny,nz};
+    }
+    vec3<T> normalizedWith(T w){
+      float mag = sqrt(x*x+y*y+z*z);
+      float nx = (1+w)*x/mag;
+      float ny = (1+w)*y/mag;
+      float nz = (1+w)*z/mag; 
+      return vec3<T>{nx,ny,nz};
+    }
     template<typename U>
     void rotate(vec3<U> o){
       T nx = 0;
@@ -131,59 +160,139 @@ namespace mesh {
     vec3<float> pos;
     vec3<float> rot;
     vec3<float> size;
-    // vec3<float> va;
-    // vec3<float> vb;
-    // vec3<float> vc;
-    // vec3<float> vd;
-    // vec3<float> ve;
-    // vec3<float> vf;
-    // vec3<float> vg;
-    // vec3<float> vh;
+    vec3<float> axes[3];
     tri3<float> tripoints;
     
-    // void makepoints(){
-    //   va = {pos.x+size.x,pos.y+size.y,pos.z+size.z};
-    //   vb = {pos.x-size.x,pos.y+size.y,pos.z+size.z};
-    //   vc = {pos.x+size.x,pos.y+size.y,pos.z-size.z};
-    //   vd = {pos.x-size.x,pos.y+size.y,pos.z-size.z};
-    //   ve = {pos.x+size.x,pos.y-size.y,pos.z+size.z};
-    //   vf = {pos.x-size.x,pos.y-size.y,pos.z+size.z};
-    //   vg = {pos.x+size.x,pos.y-size.y,pos.z-size.z};
-    //   vh = {pos.x-size.x,pos.y-size.y,pos.z-size.z};
-    //   va.rotate(rot);
-    //   vb.rotate(rot);
-    //   vc.rotate(rot);
-    //   vd.rotate(rot);
-    //   ve.rotate(rot);
-    //   vf.rotate(rot);
-    //   vg.rotate(rot);      
-    //   vh.rotate(rot);
+    vec3<float>* getAxes(){
+      axes[0] = normals[1];
+      axes[0].rotate(rot);
+      axes[1] = normals[5];
+      axes[1].rotate(rot);
+      axes[2] = normals[2];
+      axes[2].rotate(rot);      
+      return axes;
+    }
+    auto checkCollision(cshape_t o){
+      struct CollisionResult {bool collided; vec3<float> normal; float proj;};
+      unsigned long vs = sizeof(vec3<float>);
+      vec3<float>* seperateingAxes = (vec3<float>*)malloc(15*vs);
+      vec3<float>* moax = getAxes();
+      vec3<float>* ooax = o.getAxes();
+      memcpy(seperateingAxes,moax,3*vs);
+      memcpy(seperateingAxes+3,ooax,3*vs);
+      vec3<float> pt = o.pos-pos;  
+      for (int i = 0; i < 3; i++){
+        for (int o = 0; o < 3; o++){
+          seperateingAxes[o+3*i+6] = seperateingAxes[i].cross(seperateingAxes[o]);
+        }
+      }
+      float lowestProj = -1.0f;
+      vec3<float> lowestProjSeperatingAxis {-1,-1,-1};
+      for (int i = 0; i < 15; i++){
+        vec3<float> ca = seperateingAxes[i];
+        float projA = abs((moax[0]*(size.x/2)).dot(ca))+abs((moax[1]*(size.y/2)).dot(ca))+abs((moax[2]*(size.z/2)).dot(ca));
+        float projB = abs((ooax[0]*(o.size.x/2)).dot(ca))+abs((ooax[1]*(o.size.y/2)).dot(ca))+abs((ooax[2]*(o.size.z/2)).dot(ca));
+        if (abs(pt.dot(seperateingAxes[i])) > projA + projB){
+          free(seperateingAxes);seperateingAxes=NULL;return CollisionResult{false,lowestProjSeperatingAxis,lowestProj};
+        }
+        if ((projA+projB != 0.0f && lowestProj > (projA + projB - abs(pt.dot(seperateingAxes[i])))) || lowestProj < 0){
+          lowestProj= projA + projB - abs(pt.dot(seperateingAxes[i]));
+          lowestProjSeperatingAxis = vec3<float>{seperateingAxes[i].x,seperateingAxes[i].y,seperateingAxes[i].z}*sgn(pt.dot(ca));
+        }
+      }
+      free(seperateingAxes);seperateingAxes=NULL; return CollisionResult{true,lowestProjSeperatingAxis,lowestProj};
+    }
+    vec3<float> getMotionCollisionNormal(vec3<float> p, vec3<float> motion){
+      vec3<float> np = {p.x,p.y,p.z};
+      vec3<float> npm = np+motion;
+      np.rotate(rot*-1);
+      npm.rotate(rot*-1);
+      np = np-pos;
+      npm = npm-pos;
+      vec3<float> cnormal {0,0,0};
+      for(int i = 0; i < 6; i++){
+        if (!((npm-(normals[i]*(size/2))).dot(normals[i]) > 0)){
+          if (((np-(normals[i]*(size/2))).dot(normals[i]) > 0)){
+            cnormal=cnormal+normals[i];
+          }
+        }
+      }
+      return cnormal;
+    }
+    vec3<float> getMotionCollisionNormalOffset(vec3<float> p, vec3<float> motion,vec3<float> o){
+      vec3<float> np = {p.x,p.y,p.z};
+      vec3<float> npm = np+motion;
+      np.rotate(rot*-1);
+      npm.rotate(rot*-1);
+      np = np-pos+o;
+      npm = npm-pos+o;
+      vec3<float> cnormal {0,0,0};
+      for(int i = 0; i < 6; i++){
+        if (!((npm-(normals[i]*(size/2))).dot(normals[i]) > 0)){
+          if (((np-(normals[i]*(size/2))).dot(normals[i]) > 0)){
+            cnormal=cnormal+normals[i];
+          }
+        }
+      }
+      return cnormal;
+    }
     
-    // }
-    bool colliding(vec3<float> p,float r){
+    
+    bool colliding(vec3<float> p){
       vec3<float> np = {p.x,p.y,p.z};
       np.rotate(rot*-1);
       np = np - pos;
       for(int i = 0; i < 6; i++){
-        vec3<float> np2 = np+(normals[i]*r);
-        vec3<float> np3 = np-(normals[i]*r);
+        if ((np-(normals[i]*(size/2))).dot(normals[i]) > 0){
+          return false;
+        }
+      }
+      return true;
+    }
+    bool collidingOffset(vec3<float> p,vec3<float> o){
+      vec3<float> np = {p.x,p.y,p.z};
+      np.rotate(rot*-1);
+      np = np - pos + o;
+      for(int i = 0; i < 6; i++){
+                // printf("position: (%f,%f,%f)",p.x,mesh::camera_position.y,mesh::camera_position.z);
 
-        if (sgn<float>(np.dot(normals[i]*size)) != 0 && sgn<float>(np2.dot(normals[i]*size)) != 0 
-        && sgn<float>(np.dot(normals[i]*size)) != 0 && sgn<float>(np3.dot(normals[i]*size)) != 0){
-          if (sgn<float>(np2.dot(normals[i]*size))!=sgn<float>(np.dot(normals[i]*size))){
-            printf("dot: %f, %f\n",np2.dot(normals[i]*size),np.dot(normals[i]*size));
-            return true;
-          }else if (sgn<float>(np3.dot(normals[i]*size))!=sgn<float>(np.dot(normals[i]*size))){
-            return true;
+          if ((np-(normals[i]*(size/2))).dot(normals[i]) > 0){
+            return false;
+          }
+      }
+      return true;
+    }
+    vec3<float> getMotionCollisionNormalSphere(vec3<float> p, float r, vec3<float> motion){
+      vec3<float> cnorm {0,0,0};
+      if (!colliding(p)){
+        if (colliding(p+motion)){
+          return getMotionCollisionNormal(p,motion);
+        }
+        for(int i = 0; i < 6; i++){
+          vec3<float> off = (normals[i]*r);
+          if (!collidingOffset(p,off)){
+            if (collidingOffset(p+motion,off)){
+              cnorm=cnorm+getMotionCollisionNormalOffset(p,motion,off);
+            }
           }
         }
+      }
+      cnorm.limit(1);
+      cnorm.normalize();
+      cnorm.rotate(rot);
+      return cnorm;
+    }
+    bool collideingSphere(vec3<float> p, float r){
+      if (colliding(p)){
+        return true;
+      }
+      for(int i = 0; i < 6; i++){
 
-        
+        if (collidingOffset(p,(normals[i]*r))){
+          return true;
+        }
       }
       return false;
-
-
-
     }
     void settri(tri3<float> t){
       if(baseshape==CUBE)return;

@@ -3,4 +3,10 @@ USE_STLS =true;
 
 
 --CUBE
+POS = {0,0,0};
+ROT = {0,0,0};
+PARAMITERS = {
+    WIDTH : 2,
+    LENGTH: 2 
+};
 

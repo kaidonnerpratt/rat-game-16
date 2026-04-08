@@ -1,5 +1,5 @@
-model= Funky Jarv.stl;
-texture =fried-by-fluoride.ppm;
+model= cube.stl;
+texture =cube.ppm;
 #texmap=[
 #  (1.0, 1.0), (-1.0, -1.0), (-1.0, 1.0)
 #]

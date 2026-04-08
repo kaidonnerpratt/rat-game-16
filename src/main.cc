@@ -25,6 +25,10 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <r@@2e.hpp>
 #include <3rats.hpp>
 #include <assets.hpp>
+
+const int COLLISION_TESTS = 5;
+float Pspeed = 0.1f;
+
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
@@ -33,9 +37,12 @@ int main() {
   mesh::cshape_t cshape(mesh::CUBE);
   cshape.pos={0,0,0};
   cshape.rot={0,0,0};
-  cshape.size={1,1,1};
-
-  printf("colresult: %i\n",cshape.colliding({0,0.,0},2));
+  cshape.size={2,2,2};
+  mesh::cshape_t Pshape(mesh::CUBE);
+  Pshape.pos={0,0,0};
+  Pshape.rot={0,0,0};
+  Pshape.size={0.5f,0.5f,0.5f};
+  
   // assets::readCollisonMap3d("assets/test.kr");
   gui::init();
   unsigned char escapes=0;
@@ -61,17 +68,28 @@ int main() {
       escapes=0;
       // continue;
     }else{
+      mesh::vec3<mesh::mesh_size> camMove {0,0,0};
+      //cshape.colliding({2,2,2},2)
       switch(c){
-        case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;//ari i just looked at these
-        case 's':mesh::camera_position.x-=cos(rottrck);mesh::camera_position.y-=sin(rottrck);break;//,,, not a big fan
-        case 'd':mesh::camera_position.x-=sin(rottrck);mesh::camera_position.y+=cos(rottrck);break;//either put everything on radians
-        case 'a':mesh::camera_position.x+=sin(rottrck);mesh::camera_position.y-=cos(rottrck);break;//or dont PICK ONE
-        case ',':mesh::camera_position.z++;break;
-        case '.':mesh::camera_position.z--;break;
+        case 'w':camMove.x+=Pspeed*cos(rottrck);camMove.y+=Pspeed*sin(rottrck);break;//ari i just looked at these
+        case 's':camMove.x-=Pspeed*cos(rottrck);camMove.y-=Pspeed*sin(rottrck);break;//,,, not a big fan
+        case 'd':camMove.x-=Pspeed*sin(rottrck);camMove.y+=Pspeed*cos(rottrck);break;//either put everything on radians
+        case 'a':camMove.x+=Pspeed*sin(rottrck);camMove.y-=Pspeed*cos(rottrck);break;//or dont PICK ONE
+        case ',':camMove.z+=Pspeed;break;
+        case '.':camMove.z-=Pspeed;break;
         case 'e':logmisc=!logmisc;break;
+      }
+      Pshape.pos = mesh::camera_position+camMove;
+      auto [res, norm, proj] = cshape.checkCollision(Pshape);
+      if (!res){
+        mesh::camera_position = mesh::camera_position + camMove;
+      }else{
+        mesh::camera_position = mesh::camera_position + camMove+(norm*(proj+0.01f)); // i hate precision
       }
     }
     if(c){
+
+      printf("position: (%f,%f,%f)",mesh::camera_position.x,mesh::camera_position.y,mesh::camera_position.z);
       gui::clear_scr();
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);

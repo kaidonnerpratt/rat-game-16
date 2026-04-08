@@ -217,9 +217,8 @@ namespace gui {
     tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
     char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
-    if(v==3){return;}
     if(v!=0){
-      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);//optimize to reuse
+      vec3<mesh_size>* clipped=clipTriX(t1,0.2f);//optimize to reuse
       t1.a=clipped[0];
       t1.b=clipped[1];
       t1.c=clipped[2];
