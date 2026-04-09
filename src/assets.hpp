@@ -388,7 +388,8 @@ namespace assets {
     out.sizex=atoi(tmp);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
-    out.map=(char*)calloc(out.sizex*out.sizey,256);
+    out.map=(char*)malloc(out.sizex*out.sizey*256);
+    memset(out.map,'#',out.sizex*out.sizey*256);
     char* readTo=NULL;
     size_t amt=0;
     wspace(file,tmp);
@@ -414,7 +415,6 @@ namespace assets {
       }
       DO(readTo){
         DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %i after %.*s!\n",ftell(file),token_length,tmp),"bad read")
-        int total_read=0;
         for(unsigned int i=0;i<out.sizey;i++){
           for(unsigned int j=0;j<amt;j++){
             DO((token_length=fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file))!=out.sizex)
@@ -422,7 +422,7 @@ namespace assets {
               printf("did't get enough characters: %i/%i at %i:(%i,%i):%i\n",
                 token_length,out.sizex,ftell(file),j,i,amt)
               ,"bad read")
-            total_read+=token_length;
+            if(errno){perror("??");}
           }
           getc(file);
         }
@@ -430,9 +430,9 @@ namespace assets {
       wspace(file,tmp);
     }
     memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
-    if(*UPPER(out)&&!*LOWER(out)){
+    if((*UPPER(out)!='#')&&(*LOWER(out)=='#')){
       memcpy(LOWER(out),UPPER(out),26*out.sizex*out.sizey);
-    }else if(!*UPPER(out)){
+    }else if((*UPPER(out)=='#')&&(*LOWER(out)!='#')){
       memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
     }
     fclose(file);

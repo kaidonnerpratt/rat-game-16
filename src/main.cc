@@ -69,7 +69,7 @@ int main() {
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      gui::putFText(&font,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\"#$%&'()*+`-./0123456789:;<=>?@[\\]^_`{|}~",94,0,0,gui::term_dims.ws_col);
+      gui::putFText(&font,"According to all known laws of aviation,\nthere is no way a bee should be able to fly",84,0,0,gui::term_dims.ws_col);
       gui::drawFrame();
       escapes=0;
     }

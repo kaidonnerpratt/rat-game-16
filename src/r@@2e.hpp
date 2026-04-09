@@ -155,6 +155,12 @@ namespace gui {
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
+      if((i-last_char+1+x1)>width){
+        memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
+        memset(&color_buffer[toSSPI(x,y)],default_color,i-last_char);
+        x=x1;y++;last_char=i;
+        continue;
+      }
       if((text[i]==' ')||(i==length)||(text[i]=='\n')){
         if((x-x1+(i-last_char))>(width-1)){
           y++;x=x1;
