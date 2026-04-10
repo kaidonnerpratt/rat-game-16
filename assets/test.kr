@@ -1,12 +1,15 @@
-VERSION(3,8);
-USE_STLS =true;
+VERSION(0,0);
+USE_STLS =false;
 
 
---CUBE
-POS = {0,0,0};
-ROT = {0,0,0};
-PARAMITERS = {
-    WIDTH : 2,
-    LENGTH: 2 
-};
+--CUBE {
+    POS = {0,0,0};
+    ROT = {0,0,0};
+    PARAMITERS = {
+        WIDTH : 1,
+        LENGTH: 2,
+        HEIGHT: 3,
+        };
+}
+
 

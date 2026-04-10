@@ -43,7 +43,7 @@ int main() {
   Pshape.rot={0,0,0};
   Pshape.size={0.5f,0.5f,0.5f};
   
-  // assets::readCollisonMap3d("assets/test.kr");
+  assets::readCollisonMap3d("assets/test.kr");
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;

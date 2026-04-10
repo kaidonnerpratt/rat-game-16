@@ -218,82 +218,184 @@ namespace assets {
     FEXPECTS("]",1)ORDIE("expected ']' to end array");
     return out;
   }
-  // void readCollisonMap3d(const char* name){
-  //   bool writeingObjects = false;
-  //   DO(strlen(name)>=128){perror("file name too long");exit(1);}
-  //   printf("loading collision map %s:\n",name);
-  //   FILE* file=fopen(name,"r");
-  //   char* tmp=(char*)malloc(128);
-  //   DO(!file)ORDIE("couldn't open collision map file for read :(")
-  //   DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
-  //   wspace(file,tmp);
-  //   FEXPECTS("VERSION",7)ORDIE("expected version decleration first")
-  //   int CUR_VERSION_MAJOR;
-  //   int CUR_VERSION_MINOR;
-  //   wspace(file,tmp);
-  //   FEXPECTS("(",1)ORDIE("version decleration formatted incorrectly")
-  //   wspace(file,tmp);
-  //   tmp[nspace(file,tmp)]='\0';
-  //   CUR_VERSION_MAJOR=atoi(tmp);
-  //   wspace(file,tmp);
-  //   FEXPECTS(",",1)ORDIE("expected ',' to separate VERSION parameters")
-  //   wspace(file,tmp);
-  //   tmp[nspace(file,tmp)]='\0';
-  //   CUR_VERSION_MINOR=atoi(tmp);
-  //   wspace(file,tmp);
-  //   FEXPECTS(")",1)ORDIE("expected ')' to end version decleration")
-  //   printf("version : %i.%i\n", CUR_VERSION_MAJOR, CUR_VERSION_MINOR);
-  //   readUntil(file,tmp,';');
-  //   bool use_stls = false;
+  void readCollisonMap3d(const char* name){
+    bool writeingObjects = false;
+    DO(strlen(name)>=128){perror("file name too long");exit(1);}
+    printf("loading collision map %s:\n",name);
+    FILE* file=fopen(name,"r");
+    char* tmp=(char*)malloc(128);
+    DO(!file)ORDIE("couldn't open collision map file for read :(")
+    DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
+    wspace(file,tmp);
+    FEXPECTS("VERSION",7)ORDIE("expected version decleration first")
+    int CUR_VERSION_MAJOR;
+    int CUR_VERSION_MINOR;
+    wspace(file,tmp);
+    FEXPECTS("(",1)ORDIE("version decleration formatted incorrectly")
+    wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    CUR_VERSION_MAJOR=atoi(tmp);
+    wspace(file,tmp);
+    FEXPECTS(",",1)ORDIE("expected ',' to separate VERSION parameters")
+    wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    CUR_VERSION_MINOR=atoi(tmp);
+    wspace(file,tmp);
+    FEXPECTS(")",1)ORDIE("expected ')' to end version decleration")
+    printf("version : %i.%i\n", CUR_VERSION_MAJOR, CUR_VERSION_MINOR);
+    readUntil(file,tmp,';');
+    bool use_stls = false;
+    std::vector<mesh::cshape_t> shapes;
+    while(!feof(file)){
+      wspace(file,tmp);
+      unsigned int token_length=nspace(file,tmp);
+      DO(!token_length)ORDIE("bad tokens in collision map")
+      DO((token_length==8)&&!(memcmp(tmp,"USE_STLS",8))){
+        DO(writeingObjects)ORDIE("file information found inside data")
+        readUntil(file,tmp,'=');
+        FEXPECTS("=",1)ORDIE("expected '=' to assign USE_STLS value")
+        wspace(file,tmp);
+        token_length=readUntil(file,tmp,';');
+        DO(!token_length)ORDIE("bad value in USE_STLS")
+        DO((15+token_length+1)>=128)ORDIE("value too long")
+        tmp[token_length]='\0';
+        use_stls = !memcmp(tmp, "true", 4);
+        DO(!use_stls)DO(memcmp(tmp, "false", 5))ORDIE("expected bool for USE_STLS ")
+      }else if ((token_length==12)&&!(memcmp(tmp,"LOADFROM_STL",12))){
+        ORDIE("LOADFROM_STL currently in development... come back later")
+      }else if ((token_length>=2)&&!(memcmp(tmp,"--",2))){
+        writeingObjects=true;
+        char* shapename = (char*)malloc(token_length-2);
+        shapename[token_length-2]='\0';
+        memcpy(shapename,tmp+2,token_length-2);
+        mesh::bshape st; 
+        // if ((token_length-2==4)&&!(memcmp(shapename,"CUBE",4))){
+        // }
+        st = mesh::CUBE;
+        mesh::cshape_t sh(st);
+        wspace(file,tmp);
+        FEXPECTS("{",1)ORDIE("expected '{' to start shape declaration")
+        while (true){
+          DO(feof(file))ORDIE("expected '}' to end shape declaration")
+          wspace(file,tmp);
+          token_length=nspace(file,tmp);
+          
+          if ((token_length==3)&&!(memcmp(tmp,"POS",3))){
+            wspace(file,tmp);
+            FEXPECTS("=",1)ORDIE("expected '=' to assign position")
+            wspace(file,tmp);
+            FEXPECTS("{",1)ORDIE("expected '{' to list values in position")
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.pos.x = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in position")
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.pos.y = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in position")
+            wspace(file,tmp);
+            tmp[readUntil(file,tmp,NSPACE_TOKENS,'}')]='\0';
+            sh.pos.z = atof(tmp);
+            wspace(file,tmp);
+            printf("pos: (%f,%f,%f)", sh.pos.x,sh.pos.y,sh.pos.z);
+            FEXPECTS("}",1)ORDIE("expected '}' to end values in position")
+            wspace(file,tmp);
+            FEXPECTS(";",1)ORDIE("expected ';' to end line")
+          }else
+          if ((token_length==3)&&!(memcmp(tmp,"ROT",3))){
+            wspace(file,tmp);
+            FEXPECTS("=",1)ORDIE("expected '=' to assign rotation")
+            wspace(file,tmp);
+            FEXPECTS("{",1)ORDIE("expected '{' to list values in rotation")
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.rot.x = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in rotation")
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.rot.y = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in rotation")
+            wspace(file,tmp);
+            tmp[readUntil(file,tmp,NSPACE_TOKENS,'}')]='\0';
+            sh.rot.z = atof(tmp);
+            wspace(file,tmp);
+            printf("pos: (%f,%f,%f)", sh.pos.x,sh.pos.y,sh.pos.z);
+            FEXPECTS("}",1)ORDIE("expected '}' to end values in rotation")
+            wspace(file,tmp);
+            FEXPECTS(";",1)ORDIE("expected ';' to end line")
+          }else
+          if ((token_length==10)&&!(memcmp(tmp,"PARAMITERS",10))){
+            wspace(file,tmp);
+            FEXPECTS("=",1)ORDIE("expected '=' to assign paramiters")
+            wspace(file,tmp);
+            FEXPECTS("{",1)ORDIE("expected '{' to list values in paramiters")
+            while (true){
+              wspace(file,tmp);
+              token_length=nspace(file,tmp);
+              if ((token_length==5)&&!(memcmp(tmp,"WIDTH",5))){
+                wspace(file, tmp);
+                tmp[token_length=readUntil(file, tmp, NSPACE_TOKENS,'}')]='\0';
+                sh.size.x = atof(tmp);
+                wspace(file,tmp);
+                printf("current buffer \"%s\"\n", tmp);
 
-  //   while(!feof(file)){
-  //     wspace(file,tmp);
-  //     unsigned int token_length=nspace(file,tmp);
-  //     DO(!token_length)ORDIE("bad tokens in collision map")
-  //     DO((token_length==8)&&!(memcmp(tmp,"USE_STLS",8))){
-  //       DO(writeingObjects)ORDIE("file information found inside data")
-  //       readUntil(file,tmp,'=');
-  //       FEXPECTS("=",1)ORDIE("expected '=' to assign USE_STLS value")
-  //       wspace(file,tmp);
-  //       token_length=readUntil(file,tmp,';');
-  //       DO(!token_length)ORDIE("bad value in USE_STLS")
-  //       DO((15+token_length+1)>=128)ORDIE("value too long")
-  //       tmp[token_length]='\0';
-  //       use_stls = !memcmp(tmp, "true", 4);
-  //       DO(!use_stls)DO(memcmp(tmp, "false", 5))ORDIE("expected bool for USE_STLS ")
-  //     }else if ((token_length==12)&&!(memcmp(tmp,"LOADFROM_STL",12))){
-  //       ORDIE("LOADFROM_STL currently in development... come back later")
-  //     }else if ((token_length>=2)&&!(memcmp(tmp,"--",2))){
-  //       writeingObjects=true;
-  //       char* shapename = (char*)malloc(token_length-2);
-  //       shapename[token_length-2]='\0';
-  //       memcpy(shapename,tmp+2,token_length-2);
-  //       switch (shapename){
-  //         case("CUBE"):
+                FEXPECTS(",",1)FEXPECTS("}",1)ORDIE("expected '}' to close paramiters")
+              }else
+              if ((token_length==6)&&!(memcmp(tmp,"LENGTH",6))){
+                wspace(file, tmp);
+                tmp[token_length=readUntil(file, tmp, NSPACE_TOKENS,'}')]='\0';
+                sh.size.y = atof(tmp);
+                wspace(file,tmp);
+                printf("current buffer \"%s\"\n", tmp);
+                FEXPECTS(",",1)FEXPECTS("}",1)ORDIE("expected '}' to close paramiters")
+              }else
+              if ((token_length==6)&&!(memcmp(tmp,"HEIGHT",6))){
+                wspace(file, tmp);
+                tmp[token_length=readUntil(file, tmp, NSPACE_TOKENS,'}')]='\0';
+                sh.size.z = atof(tmp);
+                wspace(file,tmp);
+                printf("current buffer \"%s\"\n", tmp);
+                FEXPECTS(",",1)FEXPECTS("}",1)ORDIE("expected '}' to close paramiters")
+              }else if ((token_length==1)&&!(memcmp(tmp,"}",1))){break;}
+            }
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.rot.x = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in rotation")
+            wspace(file,tmp);
+            tmp[nspace(file,tmp)]='\0';
+            sh.rot.y = atof(tmp);
+            wspace(file,tmp);
+            FEXPECTS(",",1)ORDIE("expected ',' to seperate values in rotation")
+            wspace(file,tmp);
+            tmp[readUntil(file,tmp,NSPACE_TOKENS,'}')]='\0';
+            sh.rot.z = atof(tmp);
+            wspace(file,tmp);
+            printf("pos: (%f,%f,%f)", sh.pos.x,sh.pos.y,sh.pos.z);
+            FEXPECTS("}",1)ORDIE("expected '}' to end values in rotation")
+            wspace(file,tmp);
+            FEXPECTS(";",1)ORDIE("expected ';' to end line")
+          }else
+          if ((token_length==1)&&!(memcmp(tmp,"}",1))){break;}else
+          DO((token_length>=2)&&!(memcmp(tmp,"--",2)))ORDIE("expected '}' to end shape declaration")  
+        }
+        shapes.push_back(sh);
+        // memcpy(tmp,"--",2)
+        // FEXPECTS("--",2)ORDIE("expected '--' to assign object shape")
+        // tmp[2]='';
+        free(shapename);
+        shapename=NULL;
+      }
+    }
 
-  //         break;
-  //         case("HOTDOG"):
-  //           printf("current buffer : '%s'\n",shapename);  
-
-  //         break;
-  //         case("TRIANGLE"):
-
-  //         break;
-  //         case("ORANGE"):
-
-  //         break;
-  //       }
-  //       // memcpy(tmp,"--",2)
-  //       // FEXPECTS("--",2)ORDIE("expected '--' to assign object shape")
-  //       // tmp[2]='';
-  //       free(shapename);
-  //       shapename=NULL;
-  //     }
-  //   }
-
-  //   free(tmp);tmp=NULL;
-  //   fclose(file);file=NULL;
-  // }
+    free(tmp);tmp=NULL;
+    fclose(file);file=NULL;
+  }
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(text_fp){free(text_fp);text_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
     DO(strlen(name)>=128){perror("file name too long");exit(1);}

@@ -105,10 +105,12 @@ colon.
 then, for each shape you want to use you write its type
 first. this can either be defined with --TYPE to use a
 named type of >>type to use a ID type (uint). you can't
-have both. Do not use semicolon. see:
+have both. Insted of a semicolon, use brackets.
+everything else in the shape declaration will occur
+within thease brackets. see:
 
--- TYPE
->> type
+-- TYPE { }
+>> type { }
 
 next, on a newline is the position and rotation. use:
 
@@ -144,14 +146,14 @@ cannot have anthing after it like the opening one.
 that defines one shape. alltogether, the total shape
 definition looks like:
 
---TYPE
-POS = { valuex , valuey , valuez } ;
-ROT = { valuex , valuey , valuez } ;
-PARAMITERS = {
-    PARAMITER : VALUE ,
-    PARAMITER : VALUE 
-} ;
-
+--TYPE  {
+    POS = { valuex , valuey , valuez } ;
+    ROT = { valuex , valuey , valuez } ;
+    PARAMITERS = {
+        PARAMITER : VALUE ,
+        PARAMITER : VALUE 
+    } ;
+}
 a note about paramiters: while in the shape tables, 
 their names are lowercase, in the file the must be all
 upercase.
