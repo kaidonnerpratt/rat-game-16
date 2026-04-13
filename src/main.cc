@@ -21,9 +21,9 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
   return t<b?b:t;
 }
 #include <types.hpp>
+#include <assets.hpp>
 #include <r@@2e.hpp>
 #include <3rats.hpp>
-#include <assets.hpp>
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
@@ -35,6 +35,10 @@ int main() {
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
+  gui::text_t text[2]={{&font,"rat game 16!!",13},{&gui::default_font,"there are menus now. does that count as a game mechanic",55}};
+  gui::menu_t menu{
+    50,30,{'-','-','|','|','+'},2,text
+  };
   while(true){
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
@@ -69,7 +73,8 @@ int main() {
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      gui::putFText(&font,"According to all known laws of aviation,\nthere is no way a bee should be able to fly",84,0,0,gui::term_dims.ws_col);
+      // gui::putFText(&font,"According to all known laws of aviation,\nthere is no way a bee should be able to fly",84,0,0,gui::term_dims.ws_col);
+      gui::putMenu(&menu,1,1);
       gui::drawFrame();
       escapes=0;
     }

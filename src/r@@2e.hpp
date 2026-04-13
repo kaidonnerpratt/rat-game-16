@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <types.hpp>
 #include <colors.hpp>
+#include <assets.hpp>
 #define DO(x) if(x)
 #define ORDIE(s) {::gui::stop(s);exit(1);}
 #define BRKST(X,Y) if(::gui::state&STATE_ ## X){Y ::gui::state&=~STATE_ ## X;} //did not want to write out if(state&whatever) like 80 times
@@ -27,6 +28,8 @@ namespace gui {
                  RAWMODE_IFLAGS=~(BRKINT|ICRNL|INPCK|ISTRIP|IXON),
                  RAWMODE_OFLAGS=~(OPOST);//terminal bits to set for "raw" mode
   const int BLOCKED_SIGS=SIGTTOU|SIGSTOP|SIGTTIN|SIGTSTP;
+
+  assets::font_t default_font=assets::readFont("assets/font/1x1.rgft");
 
   char state='\0';//see macros for which bits mean what
 
@@ -151,7 +154,7 @@ namespace gui {
     return d;
   }
 
-  void putText(const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+  scoord putText(const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
@@ -177,9 +180,10 @@ namespace gui {
         last_char=i;
       }
     }
+    return y;
   }
 
-  void putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+  scoord putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
@@ -206,14 +210,40 @@ namespace gui {
           }
           x+=font->sizex;
         }
-        if(text[i]=='\n'){
+        if((text[i]=='\n')||(i==length)){
           y+=font->sizey;i++;
           x=x1;
         }
         last_char=i;
       }
     }
+    return y;
 }
+
+  scoord putFText(gui::text_t text,scoord x,scoord y,scoord width){
+    return putFText(text.font,text.text,text.length,x,y,width);
+  }
+
+  void putMenu(menu_t* menu,scoord x,scoord y){
+    putChar(x,y,menu->borders[4]);
+    putChar(x+menu->sizex,y,menu->borders[4]);
+    putChar(x,y+menu->sizey,menu->borders[4]);
+    putChar(x+menu->sizex,y+menu->sizey,menu->borders[4]);
+    for(scoord i=y+1;i<x+menu->sizey;i++){//fix all those toSSPI calls and replace with like 2 calculations
+      putChar(x,i,menu->borders[2]);
+      color_buffer[toSSPI(x,i)]=default_color;
+      putChar(x+menu->sizex,i,menu->borders[3]);
+      color_buffer[toSSPI(x+menu->sizex,i)]=default_color;
+    }
+    memset(&term_buffer[toSSPI(x+1,y)],menu->borders[0],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y)],default_color,menu->sizex+1);
+    memset(&term_buffer[toSSPI(x+1,y+menu->sizey)],menu->borders[1],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y+menu->sizey)],default_color,menu->sizex+1);
+    y++;
+    for(scoord i=0;(i<menu->textcount)&&(y<menu->sizey);i++){
+      y=putFText(menu->items[i],x+1,y,menu->sizex-1);
+    }
+  }
 
   void drawFrame(){
     DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
