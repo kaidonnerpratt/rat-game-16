@@ -36,18 +36,22 @@ namespace gui {
   typedef unsigned short int scoord;//coordinate on the screen, in characters
   typedef unsigned char sfrac;//represents the fraction of width/this
   enum text_align{
-    LEFT,CENTER,RIGHT
+    LEFT,CENTER,RIGHT//tbd
   };
   struct text_t{
     assets::font_t* font;
     const char* text;
     scoord length;
+    text_align alignment;
   };
   struct menu_t{
     const scoord sizex,sizey;
     const char borders[5];//up/down/left/right/corner
     scoord textcount;
     text_t* items;
+    scoord btncount;
+    text_t* buttons;
+    void (**funcs)();
   };
 }
 namespace mesh {

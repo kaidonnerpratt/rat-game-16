@@ -22,6 +22,8 @@
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
 namespace gui {
+  menu_t* selected_menu;
+  text_t* selected_btn;
   using namespace colors;
 
   const tcflag_t RAWMODE_LFLAGS=~(ECHO|ICANON|/*ISIG|*/IEXTEN),//remember that ~ is bitwise not
@@ -134,10 +136,10 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
-  inline scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x+1,max_chars);}
+  inline const scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
+  inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
     scoord p=toSSPI(x,y);
@@ -183,11 +185,11 @@ namespace gui {
     return y;
   }
 
-  scoord putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+  scoord putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width,text_align align){
     scoord x=x1,y=y1;
     unsigned int last_char=0;
     for(unsigned int i=0;i<=length;i++){
-      if(((i-last_char+1)*font->sizex+x1)>width){
+      if(((i-last_char)*font->sizex+x1)>width){
         for(unsigned int j=last_char;j<i;j++){
           for(unsigned int k=0;k<font->sizey;k++){
             memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizex)],font->sizex);
@@ -221,7 +223,7 @@ namespace gui {
 }
 
   scoord putFText(gui::text_t text,scoord x,scoord y,scoord width){
-    return putFText(text.font,text.text,text.length,x,y,width);
+    return putFText(text.font,text.text,text.length,x,y,width,text.alignment);
   }
 
   void putMenu(menu_t* menu,scoord x,scoord y){
@@ -241,7 +243,14 @@ namespace gui {
     memset(&color_buffer[toSSPI(x,y+menu->sizey)],default_color,menu->sizex+1);
     y++;
     for(scoord i=0;(i<menu->textcount)&&(y<menu->sizey);i++){
-      y=putFText(menu->items[i],x+1,y,menu->sizex-1);
+      y=putFText(menu->items[i],x+1,y,menu->sizex);
+    }
+    for(scoord i=0;(i<menu->btncount)&&(y<menu->sizey);i++){
+      putChar(x+1,y,((menu->buttons+i)==selected_btn)?'>':'-');
+      putChar(x+2,y,' ');
+      color_buffer[toSSPI(x+1,y)]=default_color;
+      color_buffer[toSSPI(x+2,y)]=default_color;
+      y=putFText(menu->buttons[i],x+3,y,menu->sizex);//lowk don't know why it works
     }
   }
 

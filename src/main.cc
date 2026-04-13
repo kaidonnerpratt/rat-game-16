@@ -10,13 +10,13 @@ FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
 template<typename T> concept comp =requires(T a,T b){a<b;a>b;a==b;};
-template<comp T,comp U> T constexpr min(T a,U b){return a<b?a:b;}
-template<comp T,comp U> T constexpr max(T a,U b){return a<b?b:a;}
-template<comp T,comp...U> T constexpr min(T t, U...a){
+template<comp T,comp U> T constexpr const min(T a,U b){return a<b?a:b;}
+template<comp T,comp U> T constexpr const max(T a,U b){return a<b?b:a;}
+template<comp T,comp...U> T constexpr const min(T t, U...a){
   T b=min(a...);
   return t<b?t:b;
 }
-template<comp T,comp...U> T constexpr max(T t, U...a){
+template<comp T,comp...U> T constexpr const max(T t, U...a){
   T b=max(a...);
   return t<b?b:t;
 }
@@ -24,6 +24,7 @@ template<comp T,comp...U> T constexpr max(T t, U...a){
 #include <assets.hpp>
 #include <r@@2e.hpp>
 #include <3rats.hpp>
+void a(void){asm("int3; nop");} void b(void){exit(1);}
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
@@ -35,18 +36,25 @@ int main() {
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
-  gui::text_t text[2]={{&font,"rat game 16!!",13},{&gui::default_font,"there are menus now. does that count as a game mechanic",55}};
+  gui::text_t text[2]={{&font,"rat game 16!!",13,gui::CENTER},{&gui::default_font,"there are menus now. does that count as a game mechanic",55,gui::LEFT}};
+  gui::text_t buttons[3]={{&gui::default_font,"yes",3,gui::CENTER},{&gui::default_font,"no",2,gui::CENTER},{&gui::default_font,"???",3,gui::RIGHT}};
+  void (*funcs[3])()={&a,&b,NULL};
   gui::menu_t menu{
-    50,30,{'-','-','|','|','+'},2,text
+    50,30,{'-','-','|','|','+'},2,text,3,buttons,funcs
   };
+  gui::selected_menu=&menu;
+  gui::selected_btn=buttons;
   while(true){
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
-      case '[' :if(escapes&'\x03'=='\x01'){escapes|='\x02';}continue;
+      case '[' :if((escapes&'\x03')=='\x01'){escapes|='\x02';continue;}else{//am i getting ear'd for this one
+        gui::selected_btn=&gui::selected_menu->buttons[(gui::selected_btn-gui::selected_menu->buttons+gui::selected_menu->btncount-1)%gui::selected_menu->btncount];
+        break;
+      }
       case 'q':gui::stop();exit(0);break;
     }
-    if(escapes&'\x03'=='\x03'){
+    if((escapes&'\x03')=='\x03'){
       switch(c){
         case 'A':mesh::farplanex++;break;
         case 'B':mesh::farplanex--;break;
@@ -66,6 +74,8 @@ int main() {
         case ',':mesh::camera_position.z++;break;
         case '.':mesh::camera_position.z--;break;
         case 'e':logmisc=!logmisc;break;
+        case ']':gui::selected_btn=&gui::selected_menu->buttons[(gui::selected_btn-gui::selected_menu->buttons+1)%gui::selected_menu->btncount];break;
+        case 10:gui::selected_menu->funcs[gui::selected_btn-gui::selected_menu->buttons]();continue;
       }
     }
     if(c){
