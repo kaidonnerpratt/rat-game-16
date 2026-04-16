@@ -23,7 +23,7 @@
 #define STATE_ICLR 0b10000000
 namespace gui {
   menu_t* selected_menu;
-  text_t* selected_btn;
+  scoord selected_btn;
   using namespace colors;
 
   const tcflag_t RAWMODE_LFLAGS=~(ECHO|ICANON|/*ISIG|*/IEXTEN),//remember that ~ is bitwise not
@@ -246,7 +246,7 @@ namespace gui {
       y=putFText(menu->items[i],x+1,y,menu->sizex);
     }
     for(scoord i=0;(i<menu->btncount)&&(y<menu->sizey);i++){
-      putChar(x+1,y,((menu->buttons+i)==selected_btn)?'>':'-');
+      putChar(x+1,y,(i==selected_btn)?'>':'-');
       putChar(x+2,y,' ');
       color_buffer[toSSPI(x+1,y)]=default_color;
       color_buffer[toSSPI(x+2,y)]=default_color;

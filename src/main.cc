@@ -24,7 +24,7 @@ template<comp T,comp...U> T constexpr const max(T t, U...a){
 #include <assets.hpp>
 #include <r@@2e.hpp>
 #include <3rats.hpp>
-void a(void){asm("int3; nop");} void b(void){exit(1);}
+void a(void){exit(0);} void b(void){exit(1);}
 int main() {
   puts("\rRAT GAME 16");
   puts("LOADING MODELS");
@@ -43,13 +43,13 @@ int main() {
     50,30,{'-','-','|','|','+'},2,text,3,buttons,funcs
   };
   gui::selected_menu=&menu;
-  gui::selected_btn=buttons;
+  gui::selected_btn=0;
   while(true){
     char c=gui::readInput();
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
       case '[' :if((escapes&'\x03')=='\x01'){escapes|='\x02';continue;}else{//am i getting ear'd for this one
-        gui::selected_btn=&gui::selected_menu->buttons[(gui::selected_btn-gui::selected_menu->buttons+gui::selected_menu->btncount-1)%gui::selected_menu->btncount];
+        gui::selected_btn=(gui::selected_btn+gui::selected_menu->btncount-1)%gui::selected_menu->btncount;
         break;
       }
       case 'q':gui::stop();exit(0);break;
@@ -60,11 +60,10 @@ int main() {
         case 'B':mesh::farplanex--;break;
         case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
         case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
-        if(rottrck > 2*M_PI){rottrck-=2*M_PI;}
-        if(rottrck < 2*M_PI){rottrck+=2*M_PI;}
       }
+      if(rottrck > 2*M_PI){rottrck-=2*M_PI;}
+      if(rottrck < 2*M_PI){rottrck+=2*M_PI;}
       escapes=0;
-      // continue;
     }else{
       switch(c){
         case 'w':mesh::camera_position.x+=cos(rottrck);mesh::camera_position.y+=sin(rottrck);break;
@@ -74,8 +73,8 @@ int main() {
         case ',':mesh::camera_position.z++;break;
         case '.':mesh::camera_position.z--;break;
         case 'e':logmisc=!logmisc;break;
-        case ']':gui::selected_btn=&gui::selected_menu->buttons[(gui::selected_btn-gui::selected_menu->buttons+1)%gui::selected_menu->btncount];break;
-        case 10:gui::selected_menu->funcs[gui::selected_btn-gui::selected_menu->buttons]();continue;
+        case ']':gui::selected_btn=(gui::selected_btn+1)%gui::selected_menu->btncount;break;
+        case '\r':if(gui::selected_menu->funcs[gui::selected_btn]){gui::selected_menu->funcs[gui::selected_btn]();}break;
       }
     }
     if(c){
