@@ -164,11 +164,6 @@ namespace gui {
       SCAST(float,x1),SCAST(float,y1),
       SCAST(float,x2),SCAST(float,y2));
     if(area<0.1){return;}
-    if(logmisc){
-      // PRINT_TRI3(debug,t1,f);
-      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i)),",x0,y0,x1,y1,x2,y2);
-      // fprintf(debug,"polygon((%i,%i),(%i,%i),(%i,%i),(%i,%i)),",minx,miny,maxx,miny,maxx,maxy,minx,maxy);
-    }
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
         vec3<float> barycentric;
@@ -177,13 +172,13 @@ namespace gui {
           SCAST(float,x1),SCAST(float,y1),
           SCAST(float,x2),SCAST(float,y2)
         ))>=0)&&((barycentric.y=triarea(
-          SCAST(float,x0), SCAST(float,y0),
-          SCAST(float,x),  SCAST(float,y),
-          SCAST(float,x2), SCAST(float,y2)
+          SCAST(float,x0),SCAST(float,y0),
+          SCAST(float,x), SCAST(float,y),
+          SCAST(float,x2),SCAST(float,y2)
         ))>=0)&&((barycentric.z=triarea(
-          SCAST(float,x0), SCAST(float,y0),
-          SCAST(float,x1), SCAST(float,y1),
-          SCAST(float,x),  SCAST(float,y)
+          SCAST(float,x0),SCAST(float,y0),
+          SCAST(float,x1),SCAST(float,y1),
+          SCAST(float,x), SCAST(float,y)
         ))>=0)){
           barycentric=barycentric/area;
           float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
@@ -206,12 +201,13 @@ namespace gui {
             }
             if(logmisc){
               // fprintf(debug,"(%u,%u,%f),",x,y,depth);
-              // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
+              fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
             }
           }
         }
       }
     }
+    fflush(debug);
   }
   void drawMTri(const meshtri& t, assets::texture_t& tex){
     tri3<mesh_size> t1=t-camera_position;
