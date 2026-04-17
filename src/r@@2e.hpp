@@ -9,7 +9,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <types.hpp>
 #include <colors.hpp>
+#include <assets.hpp>
 #define DO(x) if(x)
 #define ORDIE(s) {::gui::stop(s);exit(1);}
 #define BRKST(X,Y) if(::gui::state&STATE_ ## X){Y ::gui::state&=~STATE_ ## X;} //did not want to write out if(state&whatever) like 80 times
@@ -20,12 +22,16 @@
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
 namespace gui {
+  menu_t* selected_menu;
+  scoord selected_btn;
   using namespace colors;
 
   const tcflag_t RAWMODE_LFLAGS=~(ECHO|ICANON|/*ISIG|*/IEXTEN),//remember that ~ is bitwise not
                  RAWMODE_IFLAGS=~(BRKINT|ICRNL|INPCK|ISTRIP|IXON),
                  RAWMODE_OFLAGS=~(OPOST);//terminal bits to set for "raw" mode
   const int BLOCKED_SIGS=SIGTTOU|SIGSTOP|SIGTTIN|SIGTSTP;
+
+  assets::font_t default_font=assets::readFont("assets/font/1x1.rgft");
 
   char state='\0';//see macros for which bits mean what
 
@@ -130,10 +136,10 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
-  inline scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
+  inline const scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
+  inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
     scoord p=toSSPI(x,y);
@@ -148,6 +154,104 @@ namespace gui {
     color_t d=color_buffer[p];
     color_buffer[p]=c;
     return d;
+  }
+
+  scoord putText(const char* text,unsigned int length,scoord x1,scoord y1,scoord width){
+    scoord x=x1,y=y1;
+    unsigned int last_char=0;
+    for(unsigned int i=0;i<=length;i++){
+      if((i-last_char+1+x1)>width){
+        memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
+        memset(&color_buffer[toSSPI(x,y)],default_color,i-last_char);
+        x=x1;y++;last_char=i;
+        continue;
+      }
+      if((text[i]==' ')||(i==length)||(text[i]=='\n')){
+        if((x-x1+(i-last_char))>(width-1)){
+          y++;x=x1;
+          last_char++;
+        }
+        memcpy(&term_buffer[toSSPI(x,y)],&text[last_char],i-last_char);
+        memset(&color_buffer[toSSPI(x,y)],default_color,i-last_char);
+        if(text[i]=='\n'){
+          y++;i++;
+          x=x1;
+        }else{
+          x+=i-last_char;
+        }
+        last_char=i;
+      }
+    }
+    return y;
+  }
+
+  scoord putFText(assets::font_t* font,const char* text,unsigned int length,scoord x1,scoord y1,scoord width,text_align align){
+    scoord x=x1,y=y1;
+    unsigned int last_char=0;
+    for(unsigned int i=0;i<=length;i++){
+      if(((i-last_char)*font->sizex+x1)>width){
+        for(unsigned int j=last_char;j<i;j++){
+          for(unsigned int k=0;k<font->sizey;k++){
+            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizex)],font->sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
+          }
+          x+=font->sizex;
+        }
+        x=x1;y+=font->sizey;last_char=i;
+        continue;
+      }
+      if((text[i]==' ')||(i==length)||(text[i]=='\n')){
+        if((x-x1+((i-last_char)*font->sizex))>(width-1)){
+          y+=font->sizey;x=x1;
+          last_char++;
+        }
+        for(unsigned int j=last_char;j<i;j++){
+          for(unsigned int k=0;k<font->sizey;k++){
+            memcpy(&term_buffer[toSSPI(x,y+k)],&font->map[(font->sizex*font->sizey*(unsigned char)text[j])+(k*font->sizex)],font->sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,font->sizex);
+          }
+          x+=font->sizex;
+        }
+        if((text[i]=='\n')||(i==length)){
+          y+=font->sizey;i++;
+          x=x1;
+        }
+        last_char=i;
+      }
+    }
+    return y;
+}
+
+  scoord putFText(gui::text_t text,scoord x,scoord y,scoord width){
+    return putFText(text.font,text.text,text.length,x,y,width,text.alignment);
+  }
+
+  void putMenu(menu_t* menu,scoord x,scoord y){
+    putChar(x,y,menu->borders[4]);
+    putChar(x+menu->sizex,y,menu->borders[4]);
+    putChar(x,y+menu->sizey,menu->borders[4]);
+    putChar(x+menu->sizex,y+menu->sizey,menu->borders[4]);
+    for(scoord i=y+1;i<x+menu->sizey;i++){//fix all those toSSPI calls and replace with like 2 calculations
+      putChar(x,i,menu->borders[2]);
+      color_buffer[toSSPI(x,i)]=default_color;
+      putChar(x+menu->sizex,i,menu->borders[3]);
+      color_buffer[toSSPI(x+menu->sizex,i)]=default_color;
+    }
+    memset(&term_buffer[toSSPI(x+1,y)],menu->borders[0],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y)],default_color,menu->sizex+1);
+    memset(&term_buffer[toSSPI(x+1,y+menu->sizey)],menu->borders[1],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y+menu->sizey)],default_color,menu->sizex+1);
+    y++;
+    for(scoord i=0;(i<menu->textcount)&&(y<menu->sizey);i++){
+      y=putFText(menu->items[i],x+1,y,menu->sizex);
+    }
+    for(scoord i=0;(i<menu->btncount)&&(y<menu->sizey);i++){
+      putChar(x+1,y,(i==selected_btn)?'>':'-');
+      putChar(x+2,y,' ');
+      color_buffer[toSSPI(x+1,y)]=default_color;
+      color_buffer[toSSPI(x+2,y)]=default_color;
+      y=putFText(menu->buttons[i],x+3,y,menu->sizex);//lowk don't know why it works
+    }
   }
 
   void drawFrame(){
