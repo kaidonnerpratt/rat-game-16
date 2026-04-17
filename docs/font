@@ -1,1 +1,22 @@
-rat game font docs i'll do em later
+the font format is pretty specific so comments aren't allowed
+everywhere but you can have them at the start, which is good
+for credits and attributions. we use .rgft here but as usual
+a couple letters tacked onto the end of a file name doesn't
+mean anything we aren't your microslop
+first content should be two decimal numbers delimited by an x
+and nothing else to indicate the dimensions of the font (width
+by height) then in any order specify any number of 
+- alphabet_upper
+- alphabet_lower
+- special
+- special2
+- special3
+to specify ascii regions 65-90,97-122,33-64,91-96, and 123-126
+respectively & inclusively, followed by all characters in that
+block adjacent to each other as the author would like rendered
+if the sequence had been inputted. our system does not yet
+support variable-width characters (kerning), diactrics, or
+like anything else. it probably wouldn't be super bad so good
+contribution if you really want to. maybe you can have some
+comments in there no guarantees though and definitely not in
+the rendered bits.
