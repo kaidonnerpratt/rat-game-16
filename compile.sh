@@ -1,6 +1,7 @@
 # echo "" > log.txt
 # echo ${@}
 # exit 0
+mkdir debug 2>/dev/null
 if [ "$1" = "debug" ];then
   if [ "$2" = "preprocess" ];then
     echo preprocessing
