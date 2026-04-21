@@ -31,7 +31,7 @@ namespace gui {
                  RAWMODE_OFLAGS=~(OPOST);//terminal bits to set for "raw" mode
   const int BLOCKED_SIGS=SIGTTOU|SIGSTOP|SIGTTIN|SIGTSTP;
 
-  assets::font_t default_font=assets::readFont("assets/font/1x1.rgft");
+  assets::font_t default_font=assets::readFont("./assets/font/1x1.rgft");
 
   char state='\0';//see macros for which bits mean what
 
@@ -293,3 +293,4 @@ namespace gui {
 #undef ORDIE
 #undef BRKST
 #endif
+
