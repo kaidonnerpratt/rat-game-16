@@ -1,16 +1,21 @@
                          rat game 16
-many came before it but this one has something they didn't:
-the power of friendship. having expanded rat :3 studios into 2
-(two!!) people allows for a level of silliness never before
-seen in this world
+rat game is a passion project by two idiots and we're on the
+sixteenth version of it. it's currently a game built to run on
+someone's server (yes i mean you plug in a screen to the
+server rack and that's what you play it on) because that's
+hilarious and also stupid and also means i don't have to care
+about shading languages though it might be easy to use openacc
+or cuda idk anything actually
                        things we've done
-- load & texture models from files then walk around them
+- you can load & texture models from files then walk around
+  them
 - menus are implemented
 - with custom fonts
+- the whole 3d thing is a little bit good maybe (shading,
+  depth, textures, clipping (still need to do frustum culling
+  though))
                       things we might do
 - add content
-- better controls
-- add a map
 - add gameplay
 - ???
 - profit
