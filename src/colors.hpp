@@ -6,7 +6,7 @@ namespace colors {
   constexpr color_t default_color=col(white,black);
   constexpr char* ansi_fg(char c){
     if(c&0x08){char* out=(char*)malloc(7);snprintf(out,8,"\x1b""[%.2d;1m",(c&0x07)+30);return out;}
-    else{char* out=(char*)malloc(5);snprintf(out,6,"\x1b""[%.2dm",  (c&0x07)+30);return out;}
+    else{char* out=(char*)malloc(5);snprintf(out,6,"\x1b""[%.2dm",  (c&0x07)+30);return out;}//holy memleak
   }
   constexpr char* ansi_bg(char c){
     if(c&0x80){char* out=(char*)malloc(7);snprintf(out,8,"\x1b""[%.2d;1m",(c>>4)&0x07+40);return out;}

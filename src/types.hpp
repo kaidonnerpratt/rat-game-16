@@ -66,6 +66,7 @@ namespace mesh {
     template<typename U> auto constexpr operator*(const U& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y};}
     template<typename U> auto constexpr operator/(const U& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v};}
+    auto constexpr total()const{return x+y;}
   };//all of these should implement https://cplusplus.com/reference/type_traits/is_nothrow_move_constructible/
   template<typename T> requires arith<T>&&comp<T> struct vec3 {
     T x,y,z;
@@ -79,6 +80,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const U& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v,z/v};}
     template<typename U> auto constexpr cross(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>()-std::declval<T>()*std::declval<U>())>){y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x};}
     auto constexpr magnitude()const{return sqrt((x*x)+(y*y)+(z*z));}
+    auto constexpr total()const{return x+y+z;}
   };
   template<typename T> struct vec_inner;//partial template specialization
   template<typename T> struct vec_inner<vec2<T>>{using type=T;};
@@ -115,8 +117,20 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const U& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
   };
   struct meshtri:tri3<mesh_size>{
-    // unsigned char flags=255;
     vec2<float> uv0, uv1, uv2;
+    // unsigned char flags=255;
+    template<typename U> auto constexpr operator+(const tri3<U>& t)const{return (meshtri){a+t.a,b+t.b,c+t.c,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (meshtri){a+v,b+v,c+v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator+(const U& v)const{return (meshtri){a+v,b+v,c+v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator-(const tri3<U>& t)const{return (meshtri){a-t.a,b-t.b,c-t.c,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator-(const vec3<U>& v)const{return (meshtri){a-v,b-v,c-v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator-(const U& v)const{return (meshtri){a-v,b-v,c-v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator*(const tri3<U>& t)const{return (meshtri){a*t.a,b*t.b,c*t.c,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator*(const vec3<U>& v)const{return (meshtri){a*v,b*v,c*v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator*(const U& v)const{return (meshtri){a*v,b*v,c*v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator/(const tri3<U>& t)const{return (meshtri){a/t.a,b/t.b,c/t.c,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (meshtri){a/v,b/v,c/v,uv0,uv1,uv2};}
+    template<typename U> auto constexpr operator/(const U& v)const{return (meshtri){a/v,b/v,c/v,uv0,uv1,uv2};}
   };
   struct model_t {
     short unsigned int tricount;

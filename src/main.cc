@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <type_traits>
 #include <cmath>
+#include <time.h>
 FILE* debug;
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
@@ -82,12 +83,18 @@ int main() {
       }
     }
     if(c){
+      clock_t t=clock();
       gui::clear_scr();
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
       gui::putMenu(&menu,1,1);
       gui::drawFrame();
+      clock_t t1=clock()-t;
+      float s=t1/(float)CLOCKS_PER_SEC;
+      if(s>0.1){
+        fprintf(debug,"took %.3fs to draw a frame!!!\n",s);
+      }
       escapes=0;
     }
   }
