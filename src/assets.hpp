@@ -1,21 +1,21 @@
-#ifndef ASSETS_H
-#define ASSETS_H
-#include <cstdio>
+#ifndef ASSETS_H//i'm a little bit sorry about DO()ORDIE() but
+#define ASSETS_H//like be so real it's pretty cool. i don't
+#include <cstdio>//regret ANYTHING
 #include <vector>
 #include <cstdlib>
 #include <cstring>
+#include <errno.h>
 #include <type_traits>
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #define DO(x) if(x)
-#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);
-#define ORDIE(s) {perror(s);ABORT}
-#define ORTHENDIE(c,s) {c;perror(s);ABORT}
+#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(8);
+#define ORDIE(s) {if(errno){perror(s);}else{puts(s);}ABORT}
+#define ORTHENDIE(c,s) {c;if(errno){perror(s);}else{puts(s);}ABORT}
 #define FEXPECTL(EXP_STR,EXP_STR_LEN)\
 fgets(tmp,128,file);\
 DO(ferror(file))ORDIE("ferror");i=0;\
 while(tmp[i]==' ' || tmp[i]=='\n'){i++;};\
 debug_bad_stl=memcmp(&tmp[i],EXP_STR,EXP_STR_LEN);\
-if(debug_bad_stl){printf("'%.*s'!='%.*s'\n",EXP_STR_LEN,&tmp[i],EXP_STR_LEN,EXP_STR);}\
 DO(debug_bad_stl)
 #define FEXPECTS(EXP_STR,EXP_STR_LEN)\
 DO(fread(tmp,1,EXP_STR_LEN,file)<1){perror("expected to be able to read more");ABORT}\
@@ -74,9 +74,7 @@ namespace assets {
           data[ 3],data[ 4],data[ 5],
           data[ 6],data[ 7],data[ 8],
           data[ 9],data[10],data[11]};
-        if((tri.b-tri.a).cross(tri.c-tri.a).magnitude()>0.5){
-          tris.push_back(tri);
-        }
+        if((tri.c-tri.a).cross(tri.b-tri.a).magnitude()>0.1){tris.push_back(tri);}
       }
     }else{//ascii stl
       unsigned short int l=strlen(&tmp[i]-5);
@@ -122,23 +120,21 @@ namespace assets {
         FEXPECTL("endloop",7)ORDIE("expected endloop");
         FEXPECTL("endfacet",8)ORDIE("expected endfacet");
         mesh::meshtri tri{x0,y0,z0,x1,y1,z1,x2,y2,z2};
-        if((tri.b-tri.a).cross(tri.c-tri.a).magnitude()>0.5){
-          tris.push_back(tri);
-        }
+        if((tri.c-tri.a).cross(tri.b-tri.a).magnitude()>0.1){tris.push_back(tri);}
       }
     }
     free(tmp);
     tmp=NULL;
     fclose(file);
     file=NULL;
-    printf("%i triangles\n",tris.size());
+    printf("%li triangles\n",tris.size());
     return tris;
   }
   static texture_t readPPM(const char* filename){
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strcat(tmp,filename);perror(tmp);ABORT};
+    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,128);perror(tmp);ABORT};
     int i=0;
     int width, height, maxVal;
     char format=0;
@@ -167,7 +163,8 @@ namespace assets {
       }
     }else if(format==2){//ppm6
       wspace(file,tmp);
-      short unsigned int r,g,b,j;
+      short unsigned int r,g,b;
+      unsigned j;
       while(!feof(file)&&(j<width*height)){
         fread(&r,1+(maxVal>255),1,file);
         fread(&g,1+(maxVal>255),1,file);
@@ -204,7 +201,6 @@ namespace assets {
       out.push_back(readV2f(file,tmp));
       char c=fgetc(file);
       if(c!=','){
-        // printf("!!%c:%i!!",c,ftell(file));
         ungetc(c,file);break;
       }
     }
@@ -215,7 +211,7 @@ namespace assets {
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(text_fp){free(text_fp);text_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
     DO(strlen(name)>=128){perror("file name too long");exit(1);}
-    printf("loading asset %s:\n");
+    printf("loading asset %s:\n",name);
     asset3d_t out{};
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(128);
@@ -353,9 +349,6 @@ namespace assets {
       }
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
-    for(unsigned int i=0;i<out.mesh.tricount;i++){
-      printf("(%f,%f),(%f,%f),(%f,%f)\n",out.mesh.tris[i].uv0.x,out.mesh.tris[i].uv0.y,out.mesh.tris[i].uv1.x,out.mesh.tris[i].uv1.y,out.mesh.tris[i].uv2.x,out.mesh.tris[i].uv2.y);
-    }
     free(tmp);tmp=NULL;
     free(mesh_fp);free(text_fp);
     fclose(file);file=NULL;
@@ -380,6 +373,75 @@ namespace assets {
       fputs("\n",file);
     }
     fclose(file);
+  }
+  font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
+    DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
+    printf("loading asset %s:\n",name);
+    FILE* file=fopen(name,"r");
+    char* tmp=(char*)malloc(128);
+    DO(!file)ORDIE("couldn't open asset file for read :(")
+    DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
+    DO(errno)ORDIE("unexpected error when opening file");
+    DO(ferror(file))ORDIE("unexpected error when oping file");
+    DO(feof(file))ORDIE("file too short. like way too short.");
+    font_t out{};
+    wspace(file,tmp);
+    tmp[readUntil(file,tmp,'x')]='\0';getc(file);
+    out.sizex=atoi(tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.sizey=atoi(tmp);
+    out.map=(char*)malloc(out.sizex*out.sizey*256);
+    memset(out.map,'#',out.sizex*out.sizey*256);
+    char* readTo=NULL;
+    size_t amt=0;
+    wspace(file,tmp);
+    while(!feof(file)){
+      unsigned int token_length=nspace(file,tmp);
+      DO(!token_length)ORTHENDIE(printf("%s\n",tmp),"bad tokens in asset")
+      if(token_length==14){
+        if(!memcmp(tmp,"alphabet_upper",14)){
+          amt=26;readTo=UPPER(out);
+        }else if(!memcmp(tmp,"alphabet_lower",14)){
+          amt=26;readTo=LOWER(out);
+        }
+      }else if(token_length==7){
+        if(!memcmp(tmp,"special",7)){
+          amt=32;readTo=SPECIAL(out);
+        }
+      }else if(token_length==8){
+        if(!memcmp(tmp,"special2",8)){
+          amt=6;readTo=SPECIAL2(out);
+        }else if(!memcmp(tmp,"special3",8)){
+          amt=4;readTo=SPECIAL3(out);
+        }
+      }
+      DO(readTo){
+        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %i after %.*s!\n",ftell(file),token_length,tmp),"bad read")
+        for(unsigned int i=0;i<out.sizey;i++){
+          for(unsigned int j=0;j<amt;j++){
+            DO((token_length=fread(&readTo[(j*out.sizex*out.sizey)+(i*out.sizex)],1,out.sizex,file))!=out.sizex)
+            ORTHENDIE(
+              printf("did't get enough characters: %i/%i at %i:(%i,%i):%i\n",
+                token_length,out.sizex,ftell(file),j,i,amt)
+              ,"bad read")
+            DO(errno)ORDIE("unexpected error while reading");
+	    DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
+	    DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
+          }
+          getc(file);
+        }
+      }else ORDIE("unknown token :E")
+      wspace(file,tmp);
+    }
+    memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
+    if((*UPPER(out)!='#')&&(*LOWER(out)=='#')){
+      memcpy(LOWER(out),UPPER(out),26*out.sizex*out.sizey);
+    }else if((*UPPER(out)=='#')&&(*LOWER(out)!='#')){
+      memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
+    }
+    fclose(file);
+    free(tmp);
+    return out;
   }
 }
 #undef FEXPECTL

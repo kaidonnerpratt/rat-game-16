@@ -9,21 +9,49 @@ namespace colors {
   };
   typedef unsigned char color_t;//4 bits for fg and bg. bg lshift 4
 }
-namespace gui {
-  typedef unsigned short int scoord;//coordinate on the screen, in characters
-  typedef unsigned char sfrac;//represents the fraction of width/this
-}
 namespace assets {
   struct texture_t {
       unsigned char* pixels;
-      int width, height;
-      // texture_t() = default;
-      // texture_t(const texture_t& o) {
-      //     width=o.width; height=o.height;
-      //     pixels=(unsigned char*)malloc(width*height*3);
-      //     memcpy(pixels,o.pixels,width*height*3);
-      // }
+      unsigned int width, height;
+      texture_t() = default;
+      texture_t(const texture_t& o) {
+          width=o.width; height=o.height;
+          pixels=(unsigned char*)malloc(width*height*3);
+          memcpy(pixels,o.pixels,width*height*3);
+      }
       // ~texture_t() noexcept {free(pixels);}
+  };
+  #define UPPER(f) &f.map[f.sizex*f.sizey*(unsigned char)'A']
+  #define LOWER(f) &f.map[f.sizex*f.sizey*(unsigned char)'a']
+  #define SPECIAL(f) &f.map[f.sizex*f.sizey*(unsigned char)'!']
+  #define NUMBERS(f) &f.map[f.sizex*f.sizey*(unsigned char)'0']
+  #define SPECIAL2(f) &f.map[f.sizex*f.sizey*(unsigned char)'[']
+  #define SPECIAL3(f) &f.map[f.sizex*f.sizey*(unsigned char)'{']
+  struct font_t{
+    unsigned char sizex,sizey;
+    char* map;
+  };
+}
+namespace gui {
+  typedef unsigned short int scoord;//coordinate on the screen, in characters
+  typedef unsigned char sfrac;//represents the fraction of width/this
+  enum text_align{
+    LEFT,CENTER,RIGHT//tbd
+  };
+  struct text_t{
+    assets::font_t* font;
+    const char* text;
+    scoord length;
+    text_align alignment;
+  };
+  struct menu_t{
+    const scoord sizex,sizey;
+    const char borders[5];//up/down/left/right/corner
+    scoord textcount;
+    text_t* items;
+    scoord btncount;
+    text_t* buttons;
+    void (**funcs)();
   };
 }
 namespace mesh {
@@ -50,7 +78,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y,z/v.z};}
     template<typename U> auto constexpr operator/(const U& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v,z/v};}
     template<typename U> auto constexpr cross(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>()-std::declval<T>()*std::declval<U>())>){y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x};}
-    auto constexpr magnitude()const{return sqrt(x*x+y*y+z*z);}
+    auto constexpr magnitude()const{return sqrt((x*x)+(y*y)+(z*z));}
   };
   template<typename T> struct vec_inner;//partial template specialization
   template<typename T> struct vec_inner<vec2<T>>{using type=T;};
@@ -93,7 +121,7 @@ namespace mesh {
   struct model_t {
     short unsigned int tricount;
     meshtri* tris;
-   ~model_t() noexcept {free(tris);}
+  // ~model_t() noexcept {free(tris);}
   };
 }
 namespace assets{
