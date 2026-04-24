@@ -11,8 +11,8 @@
 template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
   if constexpr(std::is_integral_v<T>){
     using sT=std::make_signed_t<T>;
-    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));
-  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}
+    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));//these probably shouldn't be negative
+  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}//but it still works so
 }
 namespace mesh {
   unsigned int farplanex=8;
@@ -183,26 +183,26 @@ namespace gui {
           barycentric=barycentric/area;
           float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
           float d=(depth/farplanex);
-          if((depth_buffer[toSSPI(x,y)]) > (d*255)){
-            depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
+          if((depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]) > (d*255)){
+            depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]=(unsigned char)(d*255);
             if((0<depth)&&(depth<farplanex)){
               float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
               float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
               u*=tex.width; 
               v*=tex.height;
               int iu=(((int)u%tex.width+tex.width)%tex.width);
-              int iv=(((int)v%tex.height+tex.height)%tex.height);
+              int iv=tex.height-(((int)v%tex.height+tex.height)%tex.height);
               int idx=(iv*tex.width+iu)*3;
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
               char c = charsbyopacity[(int)(d*opacitylength)];
-              putChar(x,y,c);
-              putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
+              putChar(x,gui::term_dims.ws_row-y,c);
+              putColor(x,gui::term_dims.ws_row-y,colors::col((colors::color)colorIdx,colors::black));
             }
-            if(logmisc){
+            // if(logmisc){
               // fprintf(debug,"(%u,%u,%f),",x,y,depth);
               // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
-            }
+            // }
           }
         }
       }

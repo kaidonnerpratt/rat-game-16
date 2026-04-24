@@ -32,7 +32,8 @@ int main() {
   debug=fopen("./debug/debug.log","w");
   if(ferror(debug)||errno||!debug){perror("couldn't open debug log file :(");exit(1);}
   puts("LOADING MODELS");
-  assets::asset3d_t model=assets::readAsset3d("./assets/cube.rgmdl");//ari i'm going to ear you
+  assets::asset3d_t model0=assets::readAsset3d("./assets/poster.rgmdl");//ari i'm going to ear you
+  assets::asset3d_t model1=assets::readAsset3d("./assets/base.rgmdl");
   puts("LOADING FONT");
   gui::default_font=assets::readFont("./assets/font/1x1.rgft");
   assets::font_t font=assets::readFont("./assets/font/6x5.rgft");
@@ -41,11 +42,11 @@ int main() {
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
-  gui::text_t text[2]={{&font,"rat game 16!!",13,gui::CENTER},{&gui::default_font,"there are menus now. does that count as a game mechanic",55,gui::LEFT}};
-  gui::text_t buttons[3]={{&gui::default_font,"yes",3,gui::CENTER},{&gui::default_font,"no",2,gui::CENTER},{&gui::default_font,"???",3,gui::RIGHT}};
+  gui::text_t text[1]={{&font,"rat game 16!!",13,gui::CENTER}/*,{&gui::default_font,"there are menus now. does that count as a game mechanic",55,gui::LEFT}*/};
+  // gui::text_t buttons[3]={{&gui::default_font,"yes",3,gui::CENTER},{&gui::default_font,"no",2,gui::CENTER},{&gui::default_font,"???",3,gui::RIGHT}};
   void (*funcs[3])()={&a,&b,NULL};
   gui::menu_t menu{
-    50,30,{'-','-','|','|','+'},2,text,3,buttons,funcs
+    50,11,{'-','-','|','|','+'},2,text,3,NULL,funcs
   };
   gui::selected_menu=&menu;
   gui::selected_btn=0;
@@ -85,8 +86,11 @@ int main() {
     if(c){
       clock_t t=clock();
       gui::clear_scr();
-      for(short unsigned int i=0;i<model.mesh.tricount;i++){
-        gui::drawMTri(model.mesh.tris[i],model.texture);
+      for(short unsigned int i=0;i<model1.mesh.tricount;i++){
+        gui::drawMTri(model1.mesh.tris[i],model1.texture);
+      }
+      for(short unsigned int i=0;i<model0.mesh.tricount;i++){
+        gui::drawMTri(model0.mesh.tris[i],model0.texture);
       }
       gui::putMenu(&menu,1,1);
       gui::drawFrame();
