@@ -60,8 +60,8 @@ int main() {
     }
     if((escapes&'\x03')=='\x03'){
       switch(c){
-        case 'A':mesh::farplanex++;break;
-        case 'B':mesh::farplanex--;break;
+        case 'A':mesh::FOV+=D_15;break;
+        case 'B':mesh::FOV-=D_15;break;
         case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
         case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
       }
@@ -86,7 +86,7 @@ int main() {
       for(short unsigned int i=0;i<model.mesh.tricount;i++){
         gui::drawMTri(model.mesh.tris[i],model.texture);
       }
-      gui::putMenu(&menu,1,1);
+      // gui::putMenu(&menu,1,1);
       gui::drawFrame();
       escapes=0;
     }

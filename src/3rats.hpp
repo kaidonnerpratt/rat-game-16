@@ -16,6 +16,7 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
 }
 namespace mesh {
   unsigned int farplanex=8;
+
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
@@ -150,7 +151,7 @@ namespace gui {
     return (tri2<scoord>){toSSPV(t.a),toSSPV(t.b),toSSPV(t.c)};
   }
   void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
-    mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
+    mesh_size z0=t1.a.x,  z1=t1.b.x,  z2=t1.c.x;
     signed short int
       x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
       x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
@@ -212,10 +213,10 @@ namespace gui {
   void drawMTri(const meshtri& t, assets::texture_t& tex){
     tri3<mesh_size> t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
-    char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
+    char v=(t1.a.x<nearplanex)+(t1.b.x<nearplanex)+(t1.c.x<nearplanex);
     if(v==3){return;}
     if(v!=0){
-      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);//optimize to reuse
+      vec3<mesh_size>* clipped=clipTriX(t1,nearplanex);//optimize to reuse
       t1.a=clipped[0];
       t1.b=clipped[1];
       t1.c=clipped[2];

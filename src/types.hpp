@@ -2,6 +2,17 @@
 #define TYPES_H
 #include <cstring>
 #include <cstdlib>
+#define D_0   (float)(0               )
+#define D_15  (float)(M_PI      /12.0f)
+#define D_30  (float)(M_PI      / 6.0f)
+#define D_45  (float)(M_PI      / 4.0f)
+#define D_60  (float)(M_PI      / 3.0f)
+#define D_90  (float)(M_PI      / 2.0f)
+#define D_120 (float)(M_PI*2.0f / 3.0f)
+#define D_135 (float)(M_PI*3.0f / 4.0f)
+#define D_150 (float)(M_PI*5.0f / 6.0f)
+#define D_180 (float)(M_PI            )
+
 namespace colors {
   enum color:char{//3 bit color 1 bit intensity
     black=0,red,green,brown,blue,purple,cyan,white,
@@ -55,6 +66,9 @@ namespace gui {
   };
 }
 namespace mesh {
+  float FOV = D_90;
+  float nearplanex=1.0f;
+
   typedef float mesh_size;
   template<typename T> requires arith<T>&&comp<T> struct vec2 {
     T x,y;//these operators are fuckin wild

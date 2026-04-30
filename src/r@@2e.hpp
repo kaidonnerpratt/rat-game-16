@@ -21,6 +21,7 @@
 #define STATE_CBUF 0b00001000
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
+#define SCREEN_SCALE (float)(tan(mesh::FOV/2.0f)*2)
 namespace gui {
   menu_t* selected_menu;
   scoord selected_btn;
@@ -136,9 +137,9 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)(((x/d)*(term_dims.ws_col/SCREEN_SCALE/2))+term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
+  inline const scoord toSSPY(T y,T d){return (scoord)(((y/d)*(term_dims.ws_row/SCREEN_SCALE/2))+term_dims.ws_row/2);}
   inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
