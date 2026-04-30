@@ -42,11 +42,16 @@ int main() {
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
-  gui::text_t text[1]={{&font,"rat game 16!!",13,gui::CENTER}/*,{&gui::default_font,"there are menus now. does that count as a game mechanic",55,gui::LEFT}*/};
+  gui::text_t text[]={
+    {&font,"Rat Game 16!!",13,gui::LEFT},
+    {&gui::default_font,"The quick brown fox jumps over the lazy dog",43,gui::LEFT},
+    {&font,"Sphinxofblackquartz,hear my vow!",32,gui::LEFT},
+    {&gui::default_font,"there are menus now. does that count as a game mechanic",55,gui::LEFT}
+  };
   // gui::text_t buttons[3]={{&gui::default_font,"yes",3,gui::CENTER},{&gui::default_font,"no",2,gui::CENTER},{&gui::default_font,"???",3,gui::RIGHT}};
-  void (*funcs[3])()={&a,&b,NULL};
+  // void (*funcs[3])()={&a,&b,NULL};
   gui::menu_t menu{
-    50,11,{'-','-','|','|','+'},2,text,3,NULL,funcs
+    80,24,{'-','-','|','|','+'},4,text,0,NULL,NULL
   };
   gui::selected_menu=&menu;
   gui::selected_btn=0;
@@ -92,7 +97,7 @@ int main() {
       for(short unsigned int i=0;i<model0.mesh.tricount;i++){
         gui::drawMTri(model0.mesh.tris[i],model0.texture);
       }
-      gui::putMenu(&menu,1,1);
+      gui::putMenu(&menu,1,5);
       gui::drawFrame();
       clock_t t1=clock()-t;
       float s=t1/(float)CLOCKS_PER_SEC;

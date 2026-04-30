@@ -376,7 +376,7 @@ namespace assets {
   }
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
-    printf("loading asset %s:\n",name);
+    printf("loading asset %s:",name);
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(128);
     DO(!file)ORDIE("couldn't open asset file for read :(")
@@ -390,8 +390,19 @@ namespace assets {
     out.sizex=atoi(tmp);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
+    printf("%ix%i\n",out.sizex,out.sizey);
     out.map=(char*)malloc(out.sizex*out.sizey*256);
-    memset(out.map,'#',out.sizex*out.sizey*256);
+    char c='?';
+    if((out.sizex*out.sizey)>3){
+      c='\\';
+      memset(out.map,'#',out.sizex*out.sizey*256);
+      for(unsigned char i=0;i!=255;i++){
+        char* towrite=&out.map[i*out.sizex*out.sizey];
+        towrite[snprintf(towrite,out.sizex*out.sizey,"\\%i",i)]='#';
+      }
+    }else{
+      memset(out.map,'#',out.sizex*out.sizey*256);
+    }
     char* readTo=NULL;
     size_t amt=0;
     wspace(file,tmp);
@@ -425,8 +436,8 @@ namespace assets {
                 token_length,out.sizex,ftell(file),j,i,amt)
               ,"bad read")
             DO(errno)ORDIE("unexpected error while reading");
-	    DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
-	    DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
+      	    DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
+      	    DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
           }
           getc(file);
         }
@@ -434,9 +445,9 @@ namespace assets {
       wspace(file,tmp);
     }
     memset(&out.map[out.sizex*out.sizey*(unsigned char)' '],' ',out.sizex*out.sizey);
-    if((*UPPER(out)!='#')&&(*LOWER(out)=='#')){
+    if((*UPPER(out)!=c)&&(*LOWER(out)==c)){
       memcpy(LOWER(out),UPPER(out),26*out.sizex*out.sizey);
-    }else if((*UPPER(out)=='#')&&(*LOWER(out)!='#')){
+    }else if((*UPPER(out)==c)&&(*LOWER(out)!=c)){
       memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
     }
     fclose(file);
