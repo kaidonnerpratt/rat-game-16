@@ -259,6 +259,8 @@ namespace gui {
     color_t last_color_fg=color_buffer[0]&0x0F;
     color_t last_color_bg=color_buffer[0]&0xF0;
     scoord last_char=0;
+    char* buf=(char*)malloc(8);
+    buf[7]='\0';
     for(scoord i=1;i<max_chars;i++){
       bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);
       bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);
@@ -267,16 +269,16 @@ namespace gui {
         if(fg_change){
           last_color_fg=color_buffer[i];
           if(bg_change){
-            fprintf(stdout,"%s%s",ansi_fg(color_buffer[i]),ansi_bg(color_buffer[i]));
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }else{
-            fprintf(stdout,"%s",ansi_fg(color_buffer[i]));
-            fseek(stdout,-1,SEEK_CUR);
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
           }
         }else{
           if(bg_change){
-            fprintf(stdout,"%s",ansi_bg(color_buffer[i]));
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }
@@ -285,6 +287,7 @@ namespace gui {
       }
     }
     fwrite(term_buffer+last_char,1,max_chars-last_char,stdout);
+    free(buf);
     // fseek(stdout,-1,SEEK_CUR);
     fflush(stdout);
   }
