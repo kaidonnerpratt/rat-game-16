@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <types.hpp>
 #include <colors.hpp>
-#include <assets.hpp>
+// #include <assets.hpp>
 #include <ctype.h>
 #define DO(x) if(x)
 #define ORDIE(s) {::gui::stop(s);exit(1);}
@@ -32,7 +32,7 @@ namespace gui {
                  RAWMODE_OFLAGS=~(OPOST);//terminal bits to set for "raw" mode
   const int BLOCKED_SIGS=SIGTTOU|SIGSTOP|SIGTTIN|SIGTSTP;
 
-  assets::font_t default_font;
+  assets::font_t f_default;
 
   char state='\0';//see macros for which bits mean what
 
@@ -158,14 +158,28 @@ namespace gui {
   }
 
   scoord putFText(assets::font_t* fontp,const char* text,unsigned int length,scoord x1,scoord y1,scoord width,scoord height,text_align align){
-    if(text==NULL){return 0;}
-    assets::font_t* font=fontp?fontp:&gui::default_font;
+    if(!text||!*text){return 0;}
+    assets::font_t* font=fontp?fontp:&gui::f_default;
+    DO(!font)ORDIE("where's the default font")
     scoord x=x1,y=y1,w=0,lw=0;
     unsigned int last_char=0;
+    #define align_stuff \
+    if(align==gui::CENTER){\
+      for(unsigned int k=0;k<font->sizey;k++){\
+        memmove(&term_buffer[toSSPI(x1+(width-(x-x1))/2,y+k)],&term_buffer[toSSPI(x1,y+k)],x-x1);\
+        memset(&term_buffer[toSSPI(x1,y+k)],' ',(width-(x-x1))/2);\
+      }\
+    }else if(align==gui::RIGHT){\
+      for(unsigned int k=0;k<font->sizey;k++){\
+        memmove(&term_buffer[toSSPI(x1+(width-x),y+k)],&term_buffer[toSSPI(x1,y+k)],x-x1);\
+        memset(&term_buffer[toSSPI(x1,y+k)],' ',(width-x));\
+      }\
+    }
     for(unsigned int i=0;(i<=length)&&(y<(y1+height));i++){
       w+=font->sizex[(unsigned char)text[i]];
       if((w-lw)>width){
         if(x!=x1){
+          align_stuff;
           y+=(font->sizey);
           x=x1;
           last_char++;
@@ -181,12 +195,14 @@ namespace gui {
           }
           x+=sizex;
         }
+        align_stuff;
         x=x1;y+=font->sizey;last_char=i-1;w=0;
         continue;
       }
       if((text[i]==' ')||(i==length)||(text[i]=='\n')){
         if(w>width){
-          y+=font->sizey;x=x1;w-=lw;//font->sizex[(unsigned char)text[i+1]];
+          align_stuff;
+          y+=font->sizey;x=x1;w-=lw;
           last_char++;
         }
         lw=w;
@@ -203,6 +219,7 @@ namespace gui {
         }
         
         if((text[i]=='\n')||(i==length)){
+          align_stuff;
           do{
             i++;y+=font->sizey;
           }while(text[i]=='\n');
@@ -212,6 +229,7 @@ namespace gui {
       }
     }
     return y;
+#undef align_stuff
   }
 
   scoord putFText(gui::text_t text,scoord x,scoord y,scoord width,scoord height){
@@ -220,29 +238,29 @@ namespace gui {
 
   void putMenu(menu_t* menu,scoord x,scoord y){//needs bounds checking
     scoord y1=y;
+    scoord w=menu->sizex?min(menu->sizex,term_dims.ws_col-1-x):term_dims.ws_col-x-1;
+    scoord h=menu->sizey?min(menu->sizey,term_dims.ws_row-1-y):term_dims.ws_row-y-1;
     putChar(x,y,menu->borders[4]);
-    putChar(x+menu->sizex,y,menu->borders[4]);
-    putChar(x,y+menu->sizey,menu->borders[4]);
-    putChar(x+menu->sizex,y+menu->sizey,menu->borders[4]);
-    for(scoord i=y+1;i<y+menu->sizey;i++){//fix all those toSSPI calls and replace with like 2 calculations
+    putChar(x+w,y,menu->borders[4]);
+    putChar(x,y+h,menu->borders[4]);
+    putChar(x+w,y+h,menu->borders[4]);
+    for(scoord i=y+1;i<y+h;i++){//fix all those toSSPI calls and replace with like 2 calculations
       putChar(x,i,menu->borders[2]);
       color_buffer[toSSPI(x,i)]=default_color;
-      putChar(x+menu->sizex,i,menu->borders[3]);
-      color_buffer[toSSPI(x+menu->sizex,i)]=default_color;
+      putChar(x+w,i,menu->borders[3]);
+      color_buffer[toSSPI(x+w,i)]=default_color;
     }
-    memset(&term_buffer[toSSPI(x+1,y)],menu->borders[0],menu->sizex-1);
-    memset(&color_buffer[toSSPI(x,y)],default_color,menu->sizex+1);
-    memset(&term_buffer[toSSPI(x+1,y+menu->sizey)],menu->borders[1],menu->sizex-1);
-    memset(&color_buffer[toSSPI(x,y+menu->sizey)],default_color,menu->sizex+1);
-    // term_buffer[toSSPI(x+1,y)+sprintf(&term_buffer[toSSPI(x+1,y)],"%i",menu->sizey)]='!';
+    memset(&term_buffer[toSSPI(x+1,y)],menu->borders[0],w-1);
+    memset(&color_buffer[toSSPI(x,y)],default_color,w);
+    memset(&term_buffer[toSSPI(x+1,y+h)],menu->borders[1],w-1);
+    memset(&color_buffer[toSSPI(x,y+h)],default_color,w);
     y++;
-    for(scoord i=0;(i<menu->textcount)&&(y<(menu->sizey+y1));i++){
-      scoord HATE=y;
-      y=putFText(menu->items[i],x+1,y,menu->sizex-1,menu->sizey+y1-y);
+    for(scoord i=0;(i<menu->textcount)&&(y<(h+y1));i++){
+      y=putFText(menu->items[i],x+1,y,w,h+y1-y);
     }
-    for(scoord i=0;(i<menu->btncount)&&(y<(menu->sizey+y1));i++){
+    for(scoord i=0;(i<menu->btncount)&&(y<(h+y1));i++){
       scoord y2=y;
-      y=putFText(menu->buttons[i],x+3,y,menu->sizex-3,menu->sizey+y1-y);//i know why it works
+      y=putFText(menu->buttons[i],x+3,y,w,h+y1-y);//i know why it works
       y2+=(y-y2-1)/2;
       putChar(x+1,y2,(i==selected_btn)?'>':'-');
       putChar(x+2,y2,' ');

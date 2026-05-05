@@ -1,4 +1,4 @@
-#define RATATOUILLE_NCURSES
+#define VERSION "v0.0.2"
 #define PRINT_TRI3(B,T,F) fprintf(B,"triangle((%" #F ",%" #F ",%" #F "),(%" #F ",%" #F ",%" #F "),(%" #F ",%" #F ",%" #F ")),",T.a.x,T.a.y,T.a.z,T.b.x,T.b.y,T.b.z,T.c.x,T.c.y,T.c.z)
 #define PRINT_TRI2(B,T,F) fprintf(B,"polygon((%" #F ",%" #F "),(%" #F ",%" #F "),(%" #F ",%" #F ")),",T.a.x,T.a.y,T.b.x,T.b.y,T.c.x,T.c.y)
 #define PRINT_TRI21(B,F)   fprintf(B,"polygon((%" #F ",%" #F "),(%" #F ",%" #F "),(%" #F ",%" #F ")),",x0,y0,x1,y1,x2,y2)
@@ -9,6 +9,7 @@
 #include <cmath>
 #include <time.h>
 FILE* debug;
+typedef void (*function)(void);
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
 template<typename T> concept comp =requires(T a,T b){a<b;a>b;a==b;};
@@ -26,58 +27,109 @@ template<comp T,comp...U> T constexpr const max(T t, U...a){
 #include <assets.hpp>
 #include <r@@2e.hpp>
 #include <3rats.hpp>
-gui::text_t* text=new gui::text_t[3];//who cares
-gui::menu_t menu{};
-void a(){
-  text[0]={&gui::default_font,"thank you that's what i've been saying",38,gui::LEFT};
-  menu.textcount=1;
-  menu.btncount=0;
+assets::font_t f_big;
+assets::font_t f_avatar;
+
+assets::asset3d_t poster;
+assets::asset3d_t base;
+
+gui::menu_t mainmenu;
+gui::menu_t pausemenu;
+
+struct gamestate {
+  char paused;
+  void (*drawFunc)();
+} gamestate{};
+
+void drawMainMenu(){
+  gui::putMenu(&mainmenu,0,0);
 }
-void b(){
-  text[0]={&gui::default_font,"you're wrong :thumbsdown:",25,gui::LEFT};
-  menu.textcount=1;
-  menu.btncount=0;
+void drawWorld(){
+  if(gamestate.paused){
+    gui::putMenu(&pausemenu,0,0);
+  }else{
+    for(unsigned int i=0;i<poster.mesh.tricount;i++){
+      gui::drawMTri(poster.mesh.tris[i],poster.texture);
+    }
+    for(unsigned int i=0;i<base.mesh.tricount;i++){
+      gui::drawMTri(base.mesh.tris[i],base.texture);
+    }
+  }
 }
-void c(){
-  text[0]={&gui::default_font,"you were supposed to pick yes or no...",38,gui::LEFT};
-  menu.textcount=1;
-  menu.btncount=0;
+void buttonContinue(){
+  gamestate.drawFunc=drawWorld;
+  gamestate.paused=0;
 }
+void quit(){
+  gui::stop();
+  exit(0);
+}
+
+void loadFonts(){
+  puts("LOADING FONT");
+  gui::f_default=assets::readFont("./assets/font/1x1.rgft");
+  f_big         =assets::readFont("./assets/font/big.rgft");
+  f_avatar      =assets::readFont("./assets/font/avatar.rgft");
+}
+void loadModels(){
+  puts("LOADING MODELS");
+  poster=assets::readAsset3d("./assets/poster.rgmdl");//ari i'm going to ear you
+  base  =assets::readAsset3d("./assets/base.rgmdl");
+}
+void loadMenus(){
+  mainmenu={
+    .sizex=0,.sizey=0,
+    .borders={'=','=','H','H','#'},
+    .textcount=1,.btncount=2
+  };
+  mainmenu.items=(gui::text_t*)malloc(sizeof(gui::text_t));
+  mainmenu.items[0]={&f_big,"RAT GAME 16" VERSION,strlen("RAT GAME 16" VERSION),gui::LEFT};
+  // mainmenu.items[1]={NULL,"now with variably aligned text",30,gui::CENTER};
+  mainmenu.buttons=(gui::text_t*)malloc(sizeof(gui::text_t)*2);
+  mainmenu.funcs=(function*)malloc(sizeof(function)*2);
+  mainmenu.buttons[0]={&f_avatar,"start game",10,gui::LEFT};
+  mainmenu.funcs[0]=&buttonContinue;
+  mainmenu.buttons[1]={&f_avatar,"quit",4,gui::LEFT};
+  mainmenu.funcs[1]=&quit;
+  pausemenu={
+    .sizex=0,.sizey=0,
+    .borders={'-','-','|','|','+'},
+    .textcount=1,.btncount=2,
+  };
+  pausemenu.items=(gui::text_t*)malloc(sizeof(gui::text_t)*2);//trust me
+  pausemenu.items[0]={&f_big,"game paused",11,gui::CENTER};
+  pausemenu.buttons=(gui::text_t*)malloc(sizeof(gui::text_t)*2);
+  pausemenu.funcs=(function*)malloc(sizeof(function)*2);
+  pausemenu.buttons[0]={&f_avatar,"continue",8,gui::CENTER};
+  pausemenu.funcs[0]=&buttonContinue;
+  pausemenu.buttons[1]={&f_avatar,"quit",4,gui::CENTER};
+  pausemenu.funcs[1]=&quit;
+}
+
 int main() {
-  puts("\rRAT GAME 16");
+  puts("RAT GAME 16");
   debug=fopen("./debug/debug.log","w");
   if(ferror(debug)||errno||!debug){perror("couldn't open debug log file :(");exit(1);}
-  puts("LOADING MODELS");
-  assets::asset3d_t model0=assets::readAsset3d("./assets/poster.rgmdl");//ari i'm going to ear you
-  assets::asset3d_t model1=assets::readAsset3d("./assets/base.rgmdl");
-  puts("LOADING FONT");
-  assets::font_t font=assets::readFont("./assets/font/6x5.rgft");
-  assets::font_t font1=assets::readFont("./assets/font/3x3.rgft");
-  gui::default_font=assets::readFont("./assets/font/1x1.rgft");
+  loadFonts();
+  loadModels();
+  loadMenus();
+  gamestate.drawFunc=drawMainMenu;
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
   float rottrck=0;
-  text[0]={&font,"Rat!!!!!!!!! Game, 16!!",23,gui::LEFT},
-  text[1]={&gui::default_font,"The quick brown fox jumps over the lazy dog. Sphinx of black quartz, hear my vow.",81,gui::LEFT};
-  text[2]={&gui::default_font,"there are menus now. they even have fancy fonts and text wrapping. does that count as a game mechanic?",102,gui::LEFT};
-  gui::text_t buttons[3]={{&font1,"yes",3,gui::CENTER},{&gui::default_font,"no",2,gui::CENTER},{&gui::default_font,"use left and right brackets to navigate up and down dialog options and enter to select",86,gui::RIGHT}};
-  void (*funcs[3])()={&a,&b,&c};
-  menu={
-    60,24,{'-','-','|','|','+'},3,text,3,buttons,funcs
-  };
-  gui::selected_menu=&menu;
+  gui::selected_menu=&pausemenu;
   gui::selected_btn=0;
   while(true){
     char c=gui::readInput();
+    if(c=='q'){quit();}
     switch(c){//escapey bits. add more later probably. note that tmux is doing strange things to us
       case '\e':escapes|='\x01';continue;
       case '[' :if((escapes&'\x03')=='\x01'){escapes|='\x02';continue;}else{//am i getting ear'd for this one
         gui::selected_btn=(gui::selected_btn+gui::selected_menu->btncount-1)%gui::selected_menu->btncount;
         break;
       }
-      case 'q':gui::stop();exit(0);break;
     }
     if((escapes&'\x03')=='\x03'){
       switch(c){
@@ -99,19 +151,17 @@ int main() {
         case '.':mesh::camera_position.z--;break;
         case 'e':logmisc=!logmisc;break;
         case ']':gui::selected_btn=(gui::selected_btn+1)%gui::selected_menu->btncount;break;
-        case '\r':if(gui::selected_menu->funcs[gui::selected_btn]){gui::selected_menu->funcs[gui::selected_btn]();}break;
+        case '\r':
+          if(gui::selected_menu&&gui::selected_menu->funcs&&gui::selected_menu->funcs[gui::selected_btn]){
+            gui::selected_menu->funcs[gui::selected_btn]();
+          }break;//could do something with \n too but idk how the input formatting works
       }
+      if(escapes&'\x01'){gamestate.paused=!gamestate.paused;}
     }
-    if(c){
+    if(c||escapes){
       clock_t t=clock();
       gui::clear_scr();
-      for(short unsigned int i=0;i<model1.mesh.tricount;i++){
-        gui::drawMTri(model1.mesh.tris[i],model1.texture);
-      }
-      for(short unsigned int i=0;i<model0.mesh.tricount;i++){
-        gui::drawMTri(model0.mesh.tris[i],model0.texture);
-      }
-      gui::putMenu(&menu,1,5);
+      if(gamestate.drawFunc){gamestate.drawFunc();}
       gui::drawFrame();
       clock_t t1=clock()-t;
       float s=t1/(float)CLOCKS_PER_SEC;

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <errno.h>
 #include <type_traits>
+#include <r@@2e.hpp>
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #define DO(x) if(x)
 #define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(8);
@@ -31,16 +32,17 @@ tmp[VAR]='\0';VAR=atoi(tmp);
 #define nspace(F,B) readUntil(F,B,NSPACE_TOKENS)
 namespace assets {
   static int debug_bad_stl;
-  static int wspace(FILE* file,char* tmp){//read until not whitespace
-    int o=0;
+  static unsigned int wspace(FILE* file,char* tmp){//read until not whitespace
+    unsigned int o=0;
+    char j;//=fgetc(file);
     do{
-      tmp[o]=fgetc(file);
-      if(tmp[o]=='#'){
-        while(tmp[o]!='\n'){o++;tmp[o]=fgetc(file);}
+      j=fgetc(file);
+      if(j=='#'){
+        while(j!='\n'){o++;j=fgetc(file);}
       }
       o++;
-    }while((tmp[o-1]==' ')||(tmp[o-1]=='\n'));
-    o--;ungetc(tmp[o],file);
+    }while((j==' ')||(j=='\n')||(j=='#'));
+    o--;ungetc(j,file);//fseek(file,-1,SEEK_CUR);
     return o;
   }
   template<typename... T> requires (std::is_convertible_v<T,char>&&...)
@@ -125,8 +127,7 @@ namespace assets {
     }
     free(tmp);
     tmp=NULL;
-    fclose(file);
-    file=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     printf("%li triangles\n",tris.size());
     return tris;
   }
@@ -177,8 +178,7 @@ namespace assets {
     }
     free(tmp);
     tmp=NULL;
-    fclose(file);
-    file=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
   }
   mesh::vec2<float> readV2f(FILE* file,char* tmp){
@@ -350,8 +350,8 @@ namespace assets {
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
     free(tmp);tmp=NULL;
-    free(mesh_fp);free(text_fp);
-    fclose(file);file=NULL;
+    free(mesh_fp);mesh_fp=NULL;free(text_fp);text_fp=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
 #undef ORDIE1
   }
@@ -372,13 +372,13 @@ namespace assets {
       }
       fputs("\n",file);
     }
-    fclose(file);
+    if(file){fclose(file);file=NULL;}
   }
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
-    printf("loading asset %s:",name);
+    printf("loading asset %s:\n",name);
     FILE* file=fopen(name,"r");
-    char* tmp=(char*)malloc(128);
+    char* tmp=(char*)malloc(256);
     DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     DO(errno)ORDIE("unexpected error when opening file");
@@ -392,6 +392,7 @@ namespace assets {
     memset(out.sizex,x,256);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
+    DO(!out.sizey)ORTHENDIE(printf("error at %i:",ftell(file)),"need to have font height greater than 0")
     printf("%ix%i\n",(*out.sizex?*out.sizex:0),out.sizey);
     out.map=(char**)calloc(256,sizeof(char*));
     size_t amt=0;
@@ -418,7 +419,7 @@ namespace assets {
         }
       }
       DO(readTo){
-        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %i after %.*s!\n",ftell(file),token_length,tmp),"bad read")
+        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %i after \"%.*s\"!\n",ftell(file),token_length,tmp),"bad read")
         unsigned int total=0;
         printf("%.*s:",token_length,tmp);
         if(!out.sizex[readTo]){
@@ -436,12 +437,12 @@ namespace assets {
             if(!out.map[readTo+j]){out.map[readTo+j]=(char*)malloc(out.sizey*out.sizex[readTo+j]);}
             DO((token_length=fread(&out.map[readTo+j][i*out.sizex[readTo+j]],1,out.sizex[readTo+j],file))!=out.sizex[readTo+j])
             ORTHENDIE(
-              printf("did't get enough characters: %i/%i at %i:(%i,%i):%i\n",
-                token_length,out.sizex,ftell(file),j,i,amt)
+              printf("didn't get enough characters: %i/%i at %i:%c:(%i,%i)\n",
+                token_length,out.sizex[readTo+j],ftell(file),readTo+j,j,i)
               ,"bad read")
             DO(errno)ORDIE("unexpected error while reading");
-      	    DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
-      	    DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
+            DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
+            DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
           }
           getc(file);
         }
@@ -461,8 +462,8 @@ namespace assets {
     }else if((*UPPER(out)==c)&&(*LOWER(out)!=c)){
       memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
     }*/
-    fclose(file);
-    free(tmp);
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
+    free(tmp);tmp=NULL;
     return out;
   }
 }
