@@ -12,7 +12,7 @@ if [ "$1" = "debug" ];then
     fi
     echo preprocessing success
   else
-    gcc -std="c++20" -I./src -g ./src/main.cc -lstdc++ -lm -o ./debug/debug.out -w 2>log.txt #change something maybe
+    gcc -std="c++20" -I./src -g ./src/main.cc -lstdc++ -lm -o ./debug/debug.out 2>log.txt #change something maybe
     if test $(stat -c%s ./log.txt) -gt 1; then
       echo debug didn\'t compile \:\(
       cat log.txt
