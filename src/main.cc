@@ -38,6 +38,7 @@ int main() {
   gui::default_font=assets::readFont("./assets/font/1x1.rgft");
   assets::font_t font=assets::readFont("./assets/font/6x5.rgft");
   gui::init();
+  printf("SCREEN INIT: %i,%i\n",gui::term_dims.ws_col,gui::term_dims.ws_row);
   unsigned char escapes=0;
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;
@@ -62,8 +63,8 @@ int main() {
     }
     if((escapes&'\x03')=='\x03'){
       switch(c){
-        case 'A':mesh::FOV+=D_15;break;
-        case 'B':mesh::FOV-=D_15;break;
+        case 'A':mesh::fov+=M_PI_4/3.0f;gui::update_fov();break;
+        case 'B':mesh::fov-=M_PI_4/3.0f;gui::update_fov();break;
         case 'C':mesh::camera_rotation.z-=rotamnt;rottrck+=rotamntrad;break;//left
         case 'D':mesh::camera_rotation.z+=rotamnt;rottrck-=rotamntrad;break;//right
       }
@@ -86,13 +87,16 @@ int main() {
     if(c){
       clock_t t=clock();
       gui::clear_scr();
+      mesh::updateFrustum();
+      gui::drawModel(model1);
       for(short unsigned int i=0;i<model1.mesh.tricount;i++){
         gui::drawMTri(model1.mesh.tris[i],model1.texture);
       }
+      gui::drawModel(model0);
       for(short unsigned int i=0;i<model0.mesh.tricount;i++){
         gui::drawMTri(model0.mesh.tris[i],model0.texture);
       }
-      // gui::putMenu(&menu,1,1);
+      gui::putMenu(&menu,1,1);
       gui::drawFrame();
       clock_t t1=clock()-t;
       float s=t1/(float)CLOCKS_PER_SEC;
