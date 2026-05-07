@@ -23,12 +23,8 @@
 #define STATE_ICLR 0b10000000
 namespace gui {
   float screen_scale = tan(mesh::fov/2.0f)*2;
-  float ssp_mult = term_dims.ws_col/screen_scale/2;
-  float ssp_offset = term_dims.ws_col/2;
   void update_fov(){
     screen_scale=tan(mesh::fov/2.0f)*2;
-    ssp_mult = term_dims.ws_col/screen_scale/2;
-    ssp_offset = term_dims.ws_col/2;
     mesh::updateFrustum();
   }
   menu_t* selected_menu;
