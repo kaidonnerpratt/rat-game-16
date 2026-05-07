@@ -19,10 +19,10 @@ namespace mesh {
   unsigned int farplanex=8;
   void updateFrustum(){
     planes[NEAR].normal.z=nearplanex;
-    planes[LEFT]   = (plane_t){cos(fov/2),sin(fov/2),0,0};
-    planes[RIGHT]  = (plane_t){cos(fov/2),-sin(fov/2),0,0};
-    planes[BOTTOM] = (plane_t){cos(fov/2),0,sin(fov/2),0};
-    planes[TOP]    = (plane_t){cos(fov/2),0,-sin(fov/2),0};
+    planes[LEFT]   = (plane_t){vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
+    planes[RIGHT]  = (plane_t){vec3<float>{(float)-cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
+    planes[BOTTOM] = (plane_t){vec3<float>{0,(float)sin(fov/2.0f),(float)cos(fov/2.0f)},0};
+    planes[TOP]    = (plane_t){vec3<float>{0,(float)cos(fov/2.0f),(float)-cos(fov/2.0f)},0};
   }
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
@@ -60,7 +60,6 @@ namespace mesh {
       return 2;
     }
   } 
-  //todo: make cliped tri's clip the tri's to make 2 uncliped tri's if the cliped tri's lie inbetween a clipping plane (the think that clips the tri's) insted of rendering the whole tri wich can lead to rendering issues you lost the game
   template<typename T> int clipTri(tri3<T> t, vec3<float> c, vec3<char> r){
     int ret=0;
     int clip = 0;
@@ -275,7 +274,7 @@ namespace gui {
             // }
           }
         }
-      } // in rat game, you play as a rat [retconn]
+      }
     }
     // fflush(debug);
   }
@@ -347,7 +346,6 @@ namespace gui {
     }else{drawTri(t1, t1.uv0, t1.uv1, t1.uv2, tex);/*merge uvs into tri2<float>*/}
   }
   int drawModel(assets::asset3d_t m){
-    
     vec3<float> mcc = m.mesh.getCenter()-camera_position; 
     int mc = clipModel(m.mesh, camera_position, camera_rotation);
     switch(mc){
@@ -355,22 +353,19 @@ namespace gui {
         for(short unsigned int i=0;i<m.mesh.tricount;i++){
           drawMTri(m.mesh.tris[i],m.texture);
         }
-        return 0;
       };break;
       case(1):{
-        // for(short unsigned int i=0;i<m.mesh.tricount;i++){
-        //   drawMTri(m.mesh.tris[i],m.texture);
-        // }
-        return 1;
+        // die
       };break;
       case(2):{
         for(short unsigned int i=0;i<m.mesh.tricount;i++){
-          if (clipTri(m.mesh.tris[i],camera_position,camera_rotation))
-          drawMTri(m.mesh.tris[i],m.texture);
+          if (clipTri(m.mesh.tris[i],camera_position,camera_rotation)){
+            drawMTri(m.mesh.tris[i],m.texture);
+          }
         }
-        return 2;
       };break;
     }
+    return mc;
   }
 }
 #endif

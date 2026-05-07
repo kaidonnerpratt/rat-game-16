@@ -87,15 +87,8 @@ int main() {
     if(c){
       clock_t t=clock();
       gui::clear_scr();
-      mesh::updateFrustum();
       gui::drawModel(model1);
-      for(short unsigned int i=0;i<model1.mesh.tricount;i++){
-        gui::drawMTri(model1.mesh.tris[i],model1.texture);
-      }
       gui::drawModel(model0);
-      for(short unsigned int i=0;i<model0.mesh.tricount;i++){
-        gui::drawMTri(model0.mesh.tris[i],model0.texture);
-      }
       gui::putMenu(&menu,1,1);
       gui::drawFrame();
       clock_t t1=clock()-t;

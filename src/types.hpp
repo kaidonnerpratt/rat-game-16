@@ -106,7 +106,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
   };
   template<typename T> requires arith<T>&&comp<T> struct tri3 {
-    vec3<T> a,b,c; //my compiler is going to blow its brains out
+    vec3<T> a,b,c;  //my compiler is going to blow its brains out
     //nan used here so it doesn't fucking try to initilize the center or radius
     template<typename U> auto constexpr operator+(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+t.a,b+t.b,c+t.c};}
     template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+v,b+v,c+v};}
@@ -152,10 +152,10 @@ namespace mesh {
   enum PLANE {NEAR=0,LEFT,RIGHT,BOTTOM,TOP};
   plane_t planes[5]={
     {nearplanex,0,0,0},
-    {cos(fov/2),sin(fov/2),0,0,},
-    {-cos(fov/2),sin(fov/2),0,0},
-    {0,sin(fov/2),cos(fov/2),0},
-    {0,cos(fov/2),-cos(fov/2),0}
+    {vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0},
+    {vec3<float>{(float)-cos(fov/2.0f),(float)sin(fov/2.0f),0},0},
+    {vec3<float>{0,(float)sin(fov/2.0f),(float)cos(fov/2.0f)},0},
+    {vec3<float>{0,(float)cos(fov/2.0f),(float)-cos(fov/2.0f)},0}
   };
   struct model_t {
     short unsigned int tricount;

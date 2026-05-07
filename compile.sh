@@ -31,7 +31,7 @@ if [ "$1" = "debug" ];then
   fi
   exit 0
 fi
-gcc -std="c++20" -I./src ./src/main.cc -lstdc++ -lm -w 2>log.txt
+gcc -std="c++20" -I./src ./src/main.cc -lstdc++ -lm 2>log.txt
 if test $(stat -c%s ./log.txt) -gt 1; then
   echo didn\'t compile \:\(
   cat log.txt
