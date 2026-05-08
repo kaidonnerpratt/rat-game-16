@@ -256,14 +256,16 @@ namespace gui {
 
   void drawFrame(){
     DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
-    color_t last_color_fg=color_buffer[0]&0x0F;
-    color_t last_color_bg=color_buffer[0]&0xF0;
+    color_t last_color_fg=color_buffer[0]&0x1F;
+    color_t last_color_bg=color_buffer[0]&0xE0;
     scoord last_char=0;
     char* buf=(char*)malloc(8);
     buf[7]='\0';
+    fputs(ansi_fg(color_buffer[0],buf),stdout); // dont ignore the first color, becouse acctualy, we need these
+    fputs(ansi_bg(color_buffer[0],buf),stdout);
     for(scoord i=1;i<max_chars;i++){
-      bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);
-      bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);
+      bool fg_change=((color_buffer[i]&0x1F)!=last_color_fg);
+      bool bg_change=((color_buffer[i]&0xE0)!=last_color_bg);
       if(fg_change||bg_change){
         fwrite(term_buffer+last_char,1,i-last_char,stdout);
         if(fg_change){

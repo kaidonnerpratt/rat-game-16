@@ -28,6 +28,7 @@ template<comp T,comp...U> T constexpr const max(T t, U...a){
 #include <3rats.hpp>
 void a(void){exit(0);} void b(void){exit(1);}
 int main() {
+  puts("\033[?1049h");
   puts("\rRAT GAME 16");
   debug=fopen("./debug/debug.log","w");
   if(ferror(debug)||errno||!debug){perror("couldn't open debug log file :(");exit(1);}
@@ -58,7 +59,7 @@ int main() {
         gui::selected_btn=(gui::selected_btn+gui::selected_menu->btncount-1)%gui::selected_menu->btncount;
         break;
       }
-      case 'q':gui::stop();exit(0);break;
+      case 'q':puts("\x1b[c");puts("\033[?1049l");puts("closed rat game screen");gui::stop();exit(0);break;
     }
     if((escapes&'\x03')=='\x03'){
       switch(c){
