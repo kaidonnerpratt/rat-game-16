@@ -135,7 +135,7 @@ namespace assets {
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,128);perror(tmp);ABORT};
+    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,127);perror(tmp);ABORT};
     int i=0;
     int width, height, maxVal;
     char format=0;
