@@ -29,10 +29,13 @@ template<comp T,comp...U> T constexpr const max(T t, U...a){
 void a(void){exit(0);} void b(void){exit(1);}
 int main() {
   puts("\rRAT GAME 16");
+  debug=fopen("./debug/debug.log","w");
+  if(ferror(debug)||errno||!debug){perror("couldn't open debug log file :(");exit(1);}
   puts("LOADING MODELS");
-  assets::asset3d_t model=assets::readAsset3d("assets/cube.rgmdl");//ari i'm going to ear you
+  assets::asset3d_t model=assets::readAsset3d("./assets/cube.rgmdl");//ari i'm going to ear you
   puts("LOADING FONT");
-  assets::font_t font=assets::readFont("assets/font/6x5.rgft");
+  gui::default_font=assets::readFont("./assets/font/1x1.rgft");
+  assets::font_t font=assets::readFont("./assets/font/6x5.rgft");
   gui::init();
   unsigned char escapes=0;
   unsigned char rotamnt=16;

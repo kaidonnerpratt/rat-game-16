@@ -8,7 +8,7 @@
 #include <type_traits>
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #define DO(x) if(x)
-#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};asm("int3; nop");
+#define ABORT if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(8);
 #define ORDIE(s) {if(errno){perror(s);}else{puts(s);}ABORT}
 #define ORTHENDIE(c,s) {c;if(errno){perror(s);}else{puts(s);}ABORT}
 #define FEXPECTL(EXP_STR,EXP_STR_LEN)\
@@ -381,6 +381,9 @@ namespace assets {
     char* tmp=(char*)malloc(128);
     DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
+    DO(errno)ORDIE("unexpected error when opening file");
+    DO(ferror(file))ORDIE("unexpected error when oping file");
+    DO(feof(file))ORDIE("file too short. like way too short.");
     font_t out{};
     wspace(file,tmp);
     tmp[readUntil(file,tmp,'x')]='\0';getc(file);
@@ -421,7 +424,9 @@ namespace assets {
               printf("did't get enough characters: %i/%i at %i:(%i,%i):%i\n",
                 token_length,out.sizex,ftell(file),j,i,amt)
               ,"bad read")
-            if(errno){perror("??");}
+            DO(errno)ORDIE("unexpected error while reading");
+	    DO(ferror(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected error while reading");
+	    DO(feof(file))ORTHENDIE(printf("error at %i!\n",ftell(file));,"unexpected end of file");
           }
           getc(file);
         }
