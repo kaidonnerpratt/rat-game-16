@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <cmath>
 #include <time.h>
-FILE* debug;
+FILE* debug=fopen("./debug/debug.log","w");
 bool logmisc=false;
 template<typename T> concept arith=std::is_arithmetic_v<T>;
 template<typename T> concept comp =requires(T a,T b){a<b;a>b;a==b;};
