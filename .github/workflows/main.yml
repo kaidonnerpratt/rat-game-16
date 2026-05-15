@@ -4,7 +4,7 @@ defaults:
     shell: bash
 jobs:
   kai_reddit:
-    if: contains(github.actor,'kai')||contains(github.triggering_actor,'kai')
+    if: contains(github.actor,'kai')||contains(github.triggering_actor,'kai')||contains(github.actor,'pratt')||contains(github.triggering_actor,'pratt')
     runs-on: ubuntu-latest
     steps:
       - run: echo 'kai reddit';kill -9 $$
