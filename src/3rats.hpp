@@ -18,13 +18,13 @@ namespace mesh {
   unsigned int farplanex=12;
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
-  template<arith T> constexpr void rotate(T& axis_0,T& axis_1,char d){
+  template<arith T> constexpr void rotate(T& axis_0,T& axis_1,signed char d){
     float r1=cos(d/128.0*M_PI),r2=sin(d/128.0*M_PI);
     float axis_0_t=(axis_0*r1)-(axis_1*r2);
     axis_1=axis_1*r1+axis_0*r2;
     axis_0=axis_0_t;
   }
-  template<typename T> constexpr inline tri3<T> rotateT(tri3<T>& v,char d){
+  template<typename T> constexpr inline tri3<T> rotateT(tri3<T>& v,signed char d){
     rotate(v.a.x,v.a.y,d);rotate(v.b.x,v.b.y,d);rotate(v.c.x,v.c.y,d);
     return v;
   }

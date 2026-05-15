@@ -6,6 +6,7 @@
 #include <cstring>
 #include <errno.h>
 #include <type_traits>
+#include <r@@2e.hpp>
 #include <3rats.hpp>
 // #pragma GCC diagnostic ignored "-Wint-to-pointer-cast" wait what
 #define DO(x) if(x)
@@ -32,16 +33,17 @@ tmp[VAR]='\0';VAR=atoi(tmp);
 #define nspace(F,B) readUntil(F,B,NSPACE_TOKENS)
 namespace assets {
   static int debug_bad_stl;
-  static int wspace(FILE* file,char* tmp){//read until not whitespace
-    int o=0;
+  static unsigned int wspace(FILE* file,char* tmp){//read until not whitespace
+    unsigned int o=0;
+    char j;//=fgetc(file);
     do{
-      tmp[o]=fgetc(file);
-      if(tmp[o]=='#'){
-        while(tmp[o]!='\n'){o++;tmp[o]=fgetc(file);}
+      j=fgetc(file);
+      if(j=='#'){
+        while(j!='\n'){o++;j=fgetc(file);}
       }
       o++;
-    }while((tmp[o-1]==' ')||(tmp[o-1]=='\n'));
-    o--;ungetc(tmp[o],file);
+    }while((j==' ')||(j=='\n')||(j=='#'));
+    o--;ungetc(j,file);//fseek(file,-1,SEEK_CUR);
     return o;
   }
   template<typename... T> requires (std::is_convertible_v<T,char>&&...)
@@ -131,8 +133,7 @@ namespace assets {
     }
     free(tmp);
     tmp=NULL;
-    fclose(file);
-    file=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     printf("%li triangles\n",tris.size());
     return tris;
   }
@@ -140,7 +141,7 @@ namespace assets {
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,128);perror(tmp);ABORT};
+    DO(!file){memcpy(tmp,"couldn't open file for read: ",30);strncat(tmp,filename,127);perror(tmp);ABORT};
     int width, height, maxVal;
     char format=0;
     FEXPECTS("P3",2){//segfaults i guess
@@ -182,8 +183,7 @@ namespace assets {
     }
     free(tmp);
     tmp=NULL;
-    fclose(file);
-    file=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
   }
   mesh::vec2<float> readV2f(FILE* file,char* tmp){
@@ -317,14 +317,14 @@ namespace assets {
           DO(fgetc(file)!=')')ORDIE1("expected ')' to end model_rotate parameters")
           for(unsigned int i=0;i<out.mesh.tricount;i++){
             if(x){
-              mesh::rotate(out.mesh.tris[i].a.y,out.mesh.tris[i].a.z,(char)x);
-              mesh::rotate(out.mesh.tris[i].b.y,out.mesh.tris[i].b.z,(char)x);
-              mesh::rotate(out.mesh.tris[i].c.y,out.mesh.tris[i].c.z,(char)x);
+              mesh::rotate(out.mesh.tris[i].a.y,out.mesh.tris[i].a.z,(signed char)x);
+              mesh::rotate(out.mesh.tris[i].b.y,out.mesh.tris[i].b.z,(signed char)x);
+              mesh::rotate(out.mesh.tris[i].c.y,out.mesh.tris[i].c.z,(signed char)x);
             }
             if(y){
-              mesh::rotate(out.mesh.tris[i].a.z,out.mesh.tris[i].a.x,(char)y);
-              mesh::rotate(out.mesh.tris[i].b.z,out.mesh.tris[i].b.x,(char)y);
-              mesh::rotate(out.mesh.tris[i].c.z,out.mesh.tris[i].c.x,(char)y);
+              mesh::rotate(out.mesh.tris[i].a.z,out.mesh.tris[i].a.x,(signed char)y);
+              mesh::rotate(out.mesh.tris[i].b.z,out.mesh.tris[i].b.x,(signed char)y);
+              mesh::rotate(out.mesh.tris[i].c.z,out.mesh.tris[i].c.x,(signed char)y);
             }
             if(z){
               mesh::rotate(out.mesh.tris[i].a.x,out.mesh.tris[i].a.y,(char)z);
@@ -403,16 +403,17 @@ namespace assets {
     }
     DO(uvassignedtris!=out.mesh.tricount)ORDIE1("didn't assign enough uv coordinates")
     free(tmp);tmp=NULL;
-    free(mesh_fp);free(text_fp);
-    fclose(file);file=NULL;
+    free(mesh_fp);mesh_fp=NULL;free(text_fp);text_fp=NULL;
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
 #undef ORDIE1
   }
+
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
-    printf("loading asset %s:",name);
+    printf("loading asset %s:\n",name);
     FILE* file=fopen(name,"r");
-    char* tmp=(char*)malloc(128);
+    char* tmp=(char*)malloc(256);
     DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     DO(errno)ORDIE("unexpected error when opening file");
@@ -426,6 +427,7 @@ namespace assets {
     memset(out.sizex,x,256);
     tmp[nspace(file,tmp)]='\0';
     out.sizey=atoi(tmp);
+    DO(!out.sizey)ORTHENDIE(printf("error at %li:",ftell(file)),"need to have font height greater than 0")
     printf("%ix%i\n",(*out.sizex?*out.sizex:0),out.sizey);
     out.map=(char**)calloc(256,sizeof(char*));
     size_t amt=0;
@@ -452,7 +454,7 @@ namespace assets {
         }
       }
       DO(readTo){
-        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %li after %.*s!\n",ftell(file),token_length,tmp),"bad read")
+        DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %li after \"%.*s\"!\n",ftell(file),token_length,tmp),"bad read")
         unsigned int total=0;
         printf("%.*s:",token_length,tmp);
         if(!out.sizex[readTo]){
@@ -495,8 +497,8 @@ namespace assets {
     }else if((*UPPER(out)==c)&&(*LOWER(out)!=c)){
       memcpy(UPPER(out),LOWER(out),26*out.sizex*out.sizey);
     }*/
-    fclose(file);
-    free(tmp);
+    DO(file){fclose(file);file=NULL;}else ORDIE("???")
+    free(tmp);tmp=NULL;
     return out;
   }
 }

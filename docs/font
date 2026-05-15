@@ -14,9 +14,13 @@ by height) then in any order specify any number of
 to specify ascii regions 65-90,97-122,33-64,91-96, and 123-126
 respectively & inclusively, followed by all characters in that
 block adjacent to each other as the author would like rendered
-if the sequence had been inputted. our system does not yet
-support variable-width characters (kerning), diactrics, or
-like anything else. it probably wouldn't be super bad so good
-contribution if you really want to. maybe you can have some
-comments in there no guarantees though and definitely not in
-the rendered bits.
+if the sequence had been inputted.
+if the width of the font (first number) is 0, then after each
+region specifier and before the letters, there should be a
+line of spaces with periods wherever a character ends. this
+allows variable-width characters (non-monospace). there is not
+yet support for variable-height characters. might make a way
+to port figlet fonts later because that's where i've been
+stealing from. save me public domain.
+another note about the comments uhh if you put them somewhere
+and it still works then cool and if it doesn't don't bother me
