@@ -22,6 +22,11 @@
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
 namespace gui {
+  float screen_scale = tan(mesh::fov/2.0f)*2;
+  void update_fov(){
+    screen_scale=tan(mesh::fov/2.0f)*2;
+    mesh::updateFrustum();
+  }
   menu_t* selected_menu;
   scoord selected_btn;
   using namespace colors;
@@ -136,9 +141,9 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)(((x/d)*(term_dims.ws_col/screen_scale/2))+term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
+  inline const scoord toSSPY(T y,T d){return (scoord)(((y/d)*(term_dims.ws_row/screen_scale/2))+term_dims.ws_row/2);}
   inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
@@ -259,6 +264,8 @@ namespace gui {
     color_t last_color_fg=color_buffer[0]&0x0F;
     color_t last_color_bg=color_buffer[0]&0xF0;
     scoord last_char=0;
+    char* buf=(char*)malloc(8);
+    buf[7]='\0';
     for(scoord i=1;i<max_chars;i++){
       bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);
       bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);
@@ -267,16 +274,16 @@ namespace gui {
         if(fg_change){
           last_color_fg=color_buffer[i];
           if(bg_change){
-            fprintf(stdout,"%s%s",ansi_fg(color_buffer[i]),ansi_bg(color_buffer[i]));
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }else{
-            fprintf(stdout,"%s",ansi_fg(color_buffer[i]));
-            fseek(stdout,-1,SEEK_CUR);
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
           }
         }else{
           if(bg_change){
-            fprintf(stdout,"%s",ansi_bg(color_buffer[i]));
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }
@@ -285,6 +292,7 @@ namespace gui {
       }
     }
     fwrite(term_buffer+last_char,1,max_chars-last_char,stdout);
+    free(buf);
     // fseek(stdout,-1,SEEK_CUR);
     fflush(stdout);
   }

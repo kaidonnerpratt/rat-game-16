@@ -8,14 +8,22 @@
 #define MESHTRI_OUTLN_01 0b00000001
 #define MESHTRI_OUTLN_12 0b00000010
 #define MESHTRI_OUTLN_20 0b00000100
+
 template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
   if constexpr(std::is_integral_v<T>){
     using sT=std::make_signed_t<T>;
-    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));
-  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}
+    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));//these probably shouldn't be negative
+  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}//but it still works so
 }
 namespace mesh {
   unsigned int farplanex=8;
+  void updateFrustum(){
+    planes[NEAR].normal.z=nearplanex;
+    planes[LEFT]   = (plane_t){vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
+    planes[RIGHT]  = (plane_t){vec3<float>{(float)-cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
+    planes[BOTTOM] = (plane_t){vec3<float>{0,(float)sin(fov/2.0f),(float)cos(fov/2.0f)},0};
+    planes[TOP]    = (plane_t){vec3<float>{0,(float)cos(fov/2.0f),(float)-cos(fov/2.0f)},0};
+  }
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
@@ -27,6 +35,67 @@ namespace mesh {
   template<typename T> inline tri3<T> rotateT(tri3<T>& v,char d){
     rotate(v.a.x,v.a.y,d);rotate(v.b.x,v.b.y,d);rotate(v.c.x,v.c.y,d);
     return v;
+  }
+  int clipModelPlane(model_t m, plane_t p, vec3<float> c, vec3<char> r){
+    vec3<float> cen = m.getCenter()-c;rotate(cen.x,cen.y,r.z);
+    float sd = p.signedDistance(cen);
+    float mr = m.getRadius();
+    if (sd > mr){
+      return 0;
+    }else if (sd < -mr){
+      return 1;
+    }else{
+      return 2;
+    }
+  }
+  int clipTriPlane(tri3<float> t, plane_t p, vec3<float> c, vec3<char> r){
+    vec3<float> cen = t.getCenter()-c;rotate(cen.x,cen.y,r.z);
+    float sd = p.signedDistance(cen);
+    float mr = t.getRadius();
+    if (sd > mr){
+      return 0;
+    }else if (sd < -mr){
+      return 1;
+    }else{
+      return 2;
+    }
+  } 
+  template<typename T> int clipTri(tri3<T> t, vec3<float> c, vec3<char> r){
+    int ret=0;
+    int clip = 0;
+    for (int i = 0; i < 5; i++){
+      int tc = clipTriPlane(t,planes[i],c,r);
+      switch(tc){
+        case (0):{
+          continue;
+        };break;
+        case(1):{
+          return 1;
+        };break;
+        case(2):{
+          ret=2;
+        };break;
+      }
+    }
+    return ret;
+  }
+  int clipModel(model_t m, vec3<float> c, vec3<char> r){
+    int ret = 0;
+    for (int i = 0; i < 5; i++){
+      int cmp = clipModelPlane(m, planes[i],c,r);
+      switch (cmp){
+        case(0):{
+          continue;
+        };break;
+        case(1):{
+          return 1;
+        };break;
+        case(2):{
+          ret = 2;
+        };break;
+      } 
+    }
+    return ret;
   }
   template<typename T> requires std::is_signed_v<T> vec3<T>* clipTriX(const tri3<T>& t,T x){//012,230
     vec3<T>* out=(vec3<T>*)malloc(sizeof(vec3<T>)*4);
@@ -150,7 +219,7 @@ namespace gui {
     return (tri2<scoord>){toSSPV(t.a),toSSPV(t.b),toSSPV(t.c)};
   }
   void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
-    mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
+    mesh_size z0=t1.a.x,  z1=t1.b.x,  z2=t1.c.x;
     signed short int
       x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
       x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
@@ -183,26 +252,26 @@ namespace gui {
           barycentric=barycentric/area;
           float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
           float d=(depth/farplanex);
-          if((depth_buffer[toSSPI(x,y)]) > (d*255)){
-            depth_buffer[toSSPI(x,y)]=(unsigned char)(d*255);
+          if((depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]) > (d*255)){
+            depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]=(unsigned char)(d*255);
             if((0<depth)&&(depth<farplanex)){
               float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
               float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
               u*=tex.width; 
               v*=tex.height;
               int iu=(((int)u%tex.width+tex.width)%tex.width);
-              int iv=(((int)v%tex.height+tex.height)%tex.height);
+              int iv=tex.height-(((int)v%tex.height+tex.height)%tex.height);
               int idx=(iv*tex.width+iu)*3;
               unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
               char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
               char c = charsbyopacity[(int)(d*opacitylength)];
-              putChar(x,y,c);
-              putColor(x,y,colors::col((colors::color)colorIdx,colors::black));
+              putChar(x,gui::term_dims.ws_row-y,c);
+              putColor(x,gui::term_dims.ws_row-y,colors::col((colors::color)colorIdx,colors::black));
             }
-            if(logmisc){
+            // if(logmisc){
               // fprintf(debug,"(%u,%u,%f),",x,y,depth);
               // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
-            }
+            // }
           }
         }
       }
@@ -212,10 +281,10 @@ namespace gui {
   void drawMTri(const meshtri& t, assets::texture_t& tex){
     meshtri t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
-    char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
+    char v=(t1.a.x<nearplanex)+(t1.b.x<nearplanex)+(t1.c.x<nearplanex);
     if(v==3){return;}
     if(v!=0){
-      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);//optimize to reuse
+      vec3<mesh_size>* clipped=clipTriX(t1,nearplanex);//optimize to reuse
       meshtri t2{
         clipped[0],
         clipped[1],
@@ -275,6 +344,28 @@ namespace gui {
       }
       free(clipped);
     }else{drawTri(t1, t1.uv0, t1.uv1, t1.uv2, tex);/*merge uvs into tri2<float>*/}
+  }
+  int drawModel(assets::asset3d_t m){
+    vec3<float> mcc = m.mesh.getCenter()-camera_position; 
+    int mc = clipModel(m.mesh, camera_position, camera_rotation);
+    switch(mc){
+      case(0):{
+        for(short unsigned int i=0;i<m.mesh.tricount;i++){
+          drawMTri(m.mesh.tris[i],m.texture);
+        }
+      };break;
+      case(1):{
+        // die
+      };break;
+      case(2):{
+        for(short unsigned int i=0;i<m.mesh.tricount;i++){
+          if (clipTri(m.mesh.tris[i],camera_position,camera_rotation)){
+            drawMTri(m.mesh.tris[i],m.texture);
+          }
+        }
+      };break;
+    }
+    return mc;
   }
 }
 #endif
