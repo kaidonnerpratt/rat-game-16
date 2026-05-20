@@ -11,8 +11,8 @@ namespace colors {
 }
 namespace assets {
   struct texture_t {
-      unsigned char* pixels;
       unsigned int width, height;
+      unsigned char* pixels;
   };
   #define UPPER(f) &f.map[(unsigned char)'A']
   #define LOWER(f) &f.map[(unsigned char)'a']

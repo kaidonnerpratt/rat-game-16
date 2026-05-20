@@ -32,6 +32,14 @@ tmp[VAR]='\0';VAR=atoi(tmp);
 #define NSPACE_TOKENS ' ','\n','#','=',',',')','('
 #define nspace(F,B) readUntil(F,B,NSPACE_TOKENS)
 namespace assets {
+  texture_t default_texture{
+    3,3,
+    (unsigned char[]){
+      000,000,000, 000,000,255, 000,255,000,
+      000,255,255, 255,000,000, 255,000,255,
+      255,255,255, 255,255,255, 255,255,255
+    }
+  };
   static int debug_bad_stl;
   static unsigned int wspace(FILE* file,char* tmp){//read until not whitespace
     unsigned int o=0;
@@ -141,7 +149,7 @@ namespace assets {
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){perror("couldn't open texture file for read");ABORT};
+    DO(!file){fflush(stdout);perror("couldn't open texture file for read");return default_texture;};
     int width, height, maxVal;
     char format=0;
     FEXPECTS("P3",2){//segfaults i guess
@@ -189,7 +197,7 @@ namespace assets {
     DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
   }
-  mesh::vec2<float> readV2f(FILE* file,char* tmp){
+  static mesh::vec2<float> readV2f(FILE* file,char* tmp){
     mesh::vec2<float> out;
     DO(fgetc(file)!='(')ORDIE("expected '(' to start vector");wspace(file,tmp);
     tmp[nspace(file,tmp)]='\0';
@@ -200,7 +208,7 @@ namespace assets {
     wspace(file,tmp);DO(fgetc(file)!=')')ORDIE("expected ')' to end vector");
     return out;
   }
-  std::vector<mesh::vec2<float>> readV2FVec(FILE* file,char* tmp){
+  static std::vector<mesh::vec2<float>> readV2FVec(FILE* file,char* tmp){
     std::vector<mesh::vec2<float>> out={};
     wspace(file,tmp);
     DO(fgetc(file)!='[')ORDIE("expected '[' to start array");
@@ -219,12 +227,14 @@ namespace assets {
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
 #define ORTHENDIE1(c,s){c;ORDIE1(s)}
-#define EXPCORDIE(N,C,N1) DO(fgetc(file)!=C)ORDIE1(N " " #C " " N1)
+    char buddyholly;
+#define EXPCORDIE(N,C,N1) DO((buddyholly=fgetc(file))!=C){printf("%li:\'%c\':",ftell(file),buddyholly);fflush(stdout);ORDIE1(N " " #C " " N1)}
     DO(strlen(name)>=128){perror("file name too long");exit(1);}
     printf("loading asset %s:\n",name);
     asset3d_t out{};
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(128);
+    tmp[127]='\0';
     DO(!file)ORDIE("couldn't open asset file for read :(")
     DO(!tmp)ORDIE("couldn't alloc memory for tmp buffer")
     char* mesh_fp=(char*)calloc(128,1);
@@ -399,6 +409,54 @@ namespace assets {
               mesh::rotate(out.mesh.tris[i].c.x,out.mesh.tris[i].c.y,(char)z);
             }
           }
+        
+        }else if(!memcmp(tmp,"texbind_fill",12)){
+          EXPCORDIE("expected",'(',"to start texbind_fill")
+          unsigned char mx=0,my=0,mz=0,px=0,py=0,pz=0,d;
+          signed char s=0;
+          for(unsigned int i=0;i<6;i++){
+            char c;
+            hate:
+            c=fgetc(file);
+            switch(c){
+              case '-':s=-1;goto hate;
+              case '+':s= 1;goto hate;
+              default:
+              DO((unsigned char)(c-'x')>2)ORTHENDIE1(printf("%li:\'%c\':",ftell(file),c);fflush(stdout),"expected x, y, or z for texbind_fill")
+              EXPCORDIE("expected",':',"to delimit texbind_fill")
+              FGETI(d);
+              DO(d>=textures.size())ORDIE1("texbind_fill index out of bounds :E")
+              if(c=='x'){if(s>=0){px=d;}if(s<=0){mx=d;}}else
+              if(c=='y'){if(s>=0){py=d;}if(s<=0){my=d;}}else
+              if(c=='z'){if(s>=0){pz=d;}if(s<=0){mz=d;}}else
+              ORDIE1("unrecognized texbind_fill character")
+              printf("%c%c:%u,%u\n",(s<0)?'-':((s>0)?'+':' '),c,(c=='x')?mx:((c=='y')?my:mz),(c=='x')?px:((c=='y')?py:pz));
+              s=0;
+              if((buddyholly=fgetc(file))!=')'){DO(buddyholly!=',')ORTHENDIE1(printf("%li:\'%c\':",ftell(file),c);fflush(stdout),"expected ',' to delimit texbind_fill or ')' to end it")}
+              else{goto end;}
+            }
+          }
+          end:;
+          for(unsigned int i=0;i<out.mesh.tricount;i++){
+            if(uvassignedtris[i]){
+              mesh::vec3<float> normal=(out.mesh.tris[i].c-out.mesh.tris[i].a).cross(out.mesh.tris[i].b-out.mesh.tris[i].a);
+              mesh::vec3<float> absnor{abs(normal.x),abs(normal.y),abs(normal.z)};
+              unsigned char m=(absnor.x>absnor.y)|((absnor.y>absnor.z)<<1)|((absnor.z>absnor.x)<<2);
+              switch(m){
+                case 0:[[fallthrough]];//'bad' cases - all equal
+                case 3:[[fallthrough]];//or circular comparison
+                case 7:[[fallthrough]];//x>y>z>x
+                case 1://x>y<z<x
+                out.tex_binds[i]=(normal.x>=0)?px:mx;break;
+                case 2:[[fallthrough]];//x<y>z<x
+                case 6://x<y>z>x
+                out.tex_binds[i]=(normal.y>=0)?py:my;break;
+                case 4:[[fallthrough]];//x<y<z>x
+                case 5://x>y<z>x
+                out.tex_binds[i]=(normal.z>=0)?pz:mz;break;
+              }
+            }
+          }
         }
       }else if((token_length==13)&&!memcmp(tmp,"texmap_offset",13)){
         DO(fgetc(file)!='(')ORDIE1("expected '(' to start texmap_offset parameters")
@@ -512,11 +570,11 @@ namespace assets {
     return out;
 #undef ORDIE1
 #undef ORTHENDIE1
+#undef EXPCORDIE
   }
-
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
-    printf("loading asset %s:\n",name);
+    printf("loading asset %s:",name);
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(256);
     DO(!file)ORDIE("couldn't open asset file for read :(")
