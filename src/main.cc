@@ -63,7 +63,7 @@ void quit(){
 }
 
 void loadFonts(){
-  puts("LOADING FONT");
+  puts("LOADING FONTS");
   gui::f_default=assets::readFont("./assets/font/1x1.rgft");
   f_big         =assets::readFont("./assets/font/big.rgft");
   f_avatar      =assets::readFont("./assets/font/avatar.rgft");

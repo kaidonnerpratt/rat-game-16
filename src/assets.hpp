@@ -239,7 +239,7 @@ namespace assets {
         DO(mesh_fp[0])ORDIE1("duplicate models in asset")
         wspace(file,tmp);DO(fgetc(file)!='=')ORDIE("expected '=' to assign model path");wspace(file,tmp);
         token_length=readUntil(file,tmp,';');
-        printf("reading model file assets/model/%.*s:",token_length,tmp);
+        printf("  reading model file assets/model/%.*s:",token_length,tmp);
         DO(!token_length)ORDIE1("bad model filepath in asset")
         DO((13+token_length+1)>=128)ORDIE1("model filepath too long")
         tmp[token_length]='\0';
@@ -277,7 +277,7 @@ namespace assets {
               memmove(tmp+15,tmp,token_length);
               memcpy(tmp,"assets/texture/",15);
               tmp[15+token_length]='\0';
-              printf("reading textures %s:",tmp);
+              printf("  reading texture file %s:",tmp);
               textures.push_back(readPPM(tmp));
               c=fgetc(file);
             }
@@ -517,7 +517,7 @@ namespace assets {
 
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
     DO(strlen(name)>=128){perror("file name too long");exit(1);}//but we only have 2 formats so that's not an issue rn
-    printf("loading asset %s:\n",name);
+    printf("loading asset %s:",name);
     FILE* file=fopen(name,"r");
     char* tmp=(char*)malloc(256);
     DO(!file)ORDIE("couldn't open asset file for read :(")
@@ -562,16 +562,11 @@ namespace assets {
       DO(readTo){
         DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %li after \"%.*s\"!\n",ftell(file),token_length,tmp),"bad read")
         unsigned int total=0;
-        printf("%.*s:",token_length,tmp);
         if(!out.sizex[readTo]){
           for(unsigned int i=0;i<amt;i++){
             total+=(out.sizex[readTo+i]=readUntil(file,tmp,'.')+1);getc(file);
-            printf("%i,",out.sizex[readTo+i]);
           }
-          printf("\b:%i\n",total);
           DO(getc(file)!='\n')ORTHENDIE(printf("expected newline at %li after width!\n",ftell(file)),"bad read")
-        }else{
-          puts("\b ");
         }
         for(unsigned int i=0;i<out.sizey;i++){
           for(unsigned int j=0;j<amt;j++){
