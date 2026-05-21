@@ -1,50 +1,60 @@
-.rgmdl is the extension for the rat game model format but like
-nobody really cares so use whatever you want.
-it's got a few parts to it: a model, a texture, and a texture
-map.
-models and textures are denoted with a filepath like so:
-model = asdf;
-texture = asdf;
-whitespace before and after the = operator is trimmed but
-everything between the first non-whitespace character and the
-semicolon is taken as the file name. no fancy stuff like
-globbing and you only get to set it once per model (once per
-file). the only supported model files are in STL (as in [2])
-and the only supported texture files are in PPM (as in [0])
-you can manually assign uv coordinates to triangles using 
-texmap=[(x,y),(x,y),(x,y)...]
-this will set triangles' uv coordinates in sequence (every 3
-points correspond to 1 triangle) but that's a massive pain in
-the ass so you can use texmap_filldefault (below)
-because manually assigning textures is horrible and evil, in
-an rgmdl file you can use a few functions
-- texmap_offset(x,y)
-    shifts every assigned point on the map by (x,y) where x
-    and y are floats.
-- texmap_scale(x,y)
-    transforms each assigned point by (x0,y0)->(x0*x,y0*y). i
-    can't say multiples because there's like 5 products. x and
-    y are floats.
-- texmap_filldefault(a,b)
-    a and b are characters x, y, or z. fills in all unassigned
-    points on the texture map with the value of their
-    mesh-space counterpart. example: texmap_filldefault(z,x)
-    sets all unassigned uv points's x to their counterpart's z
-    and their y to their counterpart's x.
--texmap_filldefault()
-    assigns texture coordinates automatically. the first point
-    on the triangle becomes (0,0), the second becomes (x,0)
-    where x is the distance between the first and second, and
-    the third becomes (x,y) where distances between the first
-    and third and second and third are equivalent across
-    coordinate spaces, achieved by plane definitions as a
-    function returning distance i think (see [1]). 
-whitespace is allowed in a lot of places but also no
-guarantees
-you can comment, everything after a # before a newline doesn't
-get parsed but like it might get messed up if you do it in the
-middle of something important
-[#] link                                            [dd/mm/yy]
-[0] https://netpbm.sourceforge.net/doc/ppm.html     [15/05/26]
-[1] https://www.desmos.com/3d/z47weump9s            [15/05/26]
-[2] https://en.wikipedia.org/wiki/STL_(file_format) [15/05/26]
+an rgmdl (Rat Game MoDeL) file holds specifications tying models
+and textures together into a cohesive object for the game. it
+consists of a series of statements that load files and modify
+loaded assets. 
+MODEL STATEMENTS
+- model = ...;
+  loads the model at the filepath ..., relative to
+	assets/model/. currently you can only have one model per file.
+  the whitespace before and after the = is optional, leading
+  whitespace is trimmed (but trailing until the ; is not)
+- model_scale(x,y,z),model_offset(x,y,z) and model_rotate(x,y,z)
+  applies a transformation along each axis. the units of
+	rotation are in fractions of a whole rotation. everything is
+	floating-point so you can use like 1e-1 for 0.1 (probably)
+TEXTURE STATEMENTS
+- texture = ...;
+	loads the texture at the filepath ..., relative to
+  assets/texture/. you can have as many textures as you want per
+  file and they're added to a list with indices starting at 0 in
+  order of where in the file they are. whitespace is trimmed in
+  the same way as with models.
+- texture = [...,...]
+  loads a list of textures. again, leading whitespace is trimmed
+  but trailing until the , or ] is not.
+- TEXTURE MAP STATEMENTS
+	the texture map is is a corresponding uv coordinate pair for
+	each xyz coordinate trio of the points on a triangle
+  - texmap = [(x,y),(x,y),(x,y),...]
+		binds texture coordinates to triangles in the same order as
+		they are in the stl file. this is a pain in the ass to do
+		manually :E. number of texmap coords can't exceed number of
+		triangles
+	- texmap_scale(x,y) and texmap_offset(x,y)
+		transforms the texmap, same as the model transformation
+		functions. might add texmap_rotate later idk
+	- texmap_filldefault(a,b)
+		this one's a bit complicated. a and b can be the characters
+		x,y, or z and this one sets the texmap coords to their
+		corresponding mesh coords (the ones in the stl file)
+		according to a and b. so texmap_filldefault(y,z) would set
+		each texmap coord's x and y to their mesh coord's y and z,
+		respectively. doesn't reassign previously assigned texmap
+		coordinate pairs (i'm pretty sure)
+	- texmap_filldefault()
+		sets texmap coords as if their meshspace triangle were
+		flattened to an xy plane, preserving distance. also doesn't
+		reassign again i HOPE
+- TEXTURE BINDING STATEMENTS
+	the texture bindings are which texture each triangle gets.
+	it's just an array of indices basically
+	- tex_binds = [a,b,...]
+		assigns the array. a,b,... are integers less than 256 (you
+		can't have more that many textuers per rgmdl) and also less
+		than the number of textures you have loaded at the moment.
+		it's again in order of the triangles and correspond to
+		those. each is by default 0
+	- tex_set(a,b)
+		sets texture binding at index a to value b
+uhh that's about it for now will add more later. why does vim
+highlight the ll?

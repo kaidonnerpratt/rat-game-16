@@ -189,7 +189,7 @@ namespace assets {
     DO(file){fclose(file);file=NULL;}else ORDIE("???")
     return out;
   }
-  mesh::vec2<float> readV2f(FILE* file,char* tmp){
+  mesh::vec2<float> readV2f(FILE* file,char* tmp){//should use this for the transformations tbh i just forgot
     mesh::vec2<float> out;
     DO(fgetc(file)!='(')ORDIE("expected '(' to start vector");wspace(file,tmp);
     tmp[nspace(file,tmp)]='\0';
@@ -512,6 +512,7 @@ namespace assets {
     return out;
 #undef ORDIE1
 #undef ORTHENDIE1
+#undef EXPCORDIE
   }
 
   font_t readFont(const char* name){//we could probably standardize systems of scanning files because lots of this code is reused
