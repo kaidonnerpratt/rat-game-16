@@ -1,0 +1,5 @@
+model = scene_demo/poster.stl;
+texture = text.ppm;
+texmap_filldefault(y,z)
+texmap_offset(-2,1)
+texmap_scale(0.25,0.5)

@@ -1,0 +1,5 @@
+model =scene_demo/base.stl;
+texture = cube_alt.ppm;
+texmap_filldefault(x,y)
+texmap_offset(4,4)
+texmap_scale(0.125,0.125)

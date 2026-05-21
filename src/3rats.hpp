@@ -5,119 +5,19 @@
 #include <r@@2e.hpp>
 #include <cmath>
 #define SCAST(t,v) static_cast<t>(v)
-#define FARPLANEX 8
 #define MESHTRI_OUTLN_01 0b00000001
 #define MESHTRI_OUTLN_12 0b00000010
 #define MESHTRI_OUTLN_20 0b00000100
-template<typename T> concept arith=std::is_arithmetic_v<T>;
-template<typename T> concept comp =requires(T a,T b){a<b;a>b;a==b;};
-template<comp T,comp U> T constexpr min(T a,U b){return a<b?a:b;}
-template<comp T,comp U> T constexpr max(T a,U b){return a<b?b:a;}
-template<comp T,comp...U> T constexpr min(T t, U...a){
-  T b=min(a...);
-  return t<b?t:b;
-}
-template<comp T,comp...U> T constexpr max(T t, U...a){
-  T b=max(a...);
-  return t<b?b:t;
-}
 template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
   if constexpr(std::is_integral_v<T>){
     using sT=std::make_signed_t<T>;
-    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));
-  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}
+    return -((x0 * ((sT)y1-y2)) + (x1 * ((sT)y2-y0)) + (x2 * ((sT)y0-y1)));//these probably shouldn't be negative
+  }else{return -((x0 * (y1-y2)) + (x1 * (y2-y0)) + (x2 * (y0-y1)));}//but it still works so
 }
 namespace mesh {
-  const char* charsbyopacity="$@MN%&0EK?UO^!;:,.";
+  unsigned int farplanex=8;
+  const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
-  typedef float mesh_size;
-  template<typename T> requires arith<T>&&comp<T> struct vec2 {
-    T x,y;//these operators are fuckin wild
-    template<typename U> auto constexpr operator+(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()+std::declval<U>())>){x+v.x,y+v.y};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (vec2<decltype(std::declval<T>()+std::declval<U>())>){x+v,y+v};}
-    template<typename U> auto constexpr operator-(const vec2<T>& v)const{return (vec2<decltype(std::declval<T>()-std::declval<U>())>){x-v.x,y-v.y};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (vec2<decltype(std::declval<T>()-std::declval<U>())>){x-v,y-v};}
-    template<typename U> auto constexpr operator*(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v.x,y*v.y};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v};}
-    template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v};}
-  };//all of these should implement https://cplusplus.com/reference/type_traits/is_nothrow_move_constructible/
-  template<typename T> struct vec2_inner;//partial template specialization
-  template<typename T> struct vec2_inner<vec2<T>>{using type=T;};
-  template<typename T> using  vec2_inner_t=typename vec2_inner<T>::type;//T is a vec2 here
-  template<typename T> requires arith<T>&&comp<T> struct vec3 {
-    T x,y,z;
-    template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()+std::declval<U>())>){x+v.x,y+v.y,z+v.z};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (vec3<decltype(std::declval<T>()+std::declval<U>())>){x+v,y+v,z+v};}
-    template<typename U> auto constexpr operator-(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()-std::declval<U>())>){x-v.x,y-v.y,z-v.z};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (vec3<decltype(std::declval<T>()-std::declval<U>())>){x-v,y-v,z-v};}
-    template<typename U> auto constexpr operator*(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>())>){x*v.x,y*v.y,z*v.z};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (vec3<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v,z*v};}
-    template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y,z/v.z};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (vec3<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v,z/v};}
-  };
-  template<typename T> struct vec3_inner;
-  template<typename T> struct vec3_inner<vec3<T>>{using type=T;};
-  template<typename T> using  vec3_inner_t=typename vec3_inner<T>::type;
-  template<typename T> requires arith<T>&&comp<T> struct tri2 {
-    vec2<T> a,b,c;
-    template<typename U> auto constexpr operator+(const tri2<U>& t)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+t.a,b+t.b,c+t.c};}
-    template<typename U> auto constexpr operator+(const vec2<U>& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()+std::declval<U>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator-(const tri2<U>& t)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()-std::declval<vec2<U>>())>>){a-t.a,b-t.b,c-t.c};}
-    template<typename U> auto constexpr operator-(const vec2<U>& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()-std::declval<vec2<U>>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()-std::declval<U>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator*(const tri2<U>& t)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()*std::declval<vec2<U>>())>>){a*t.a,b*t.b,c*t.c};}
-    template<typename U> auto constexpr operator*(const vec2<U>& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()*std::declval<vec2<U>>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()*std::declval<U>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator/(const tri2<U>& t)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/t.a,b/t.b,c/t.c};}
-    template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/v,b/v,c/v};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec2_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
-  vec3_inner_t<vec3<float>> n;
-  template<typename T> requires arith<T>&&comp<T> struct tri3 {
-    vec3<T> a,b,c;//my compiler is going to blow its brains out
-    template<typename U> auto constexpr operator+(const tri3<U>& t)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+t.a,b+t.b,c+t.c};}
-    template<typename U> auto constexpr operator+(const vec3<U>& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator+(const U& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()+std::declval<U>())>>){a+v,b+v,c+v};}
-    template<typename U> auto constexpr operator-(const tri3<U>& t)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()-std::declval<vec3<U>>())>>){a-t.a,b-t.b,c-t.c};}
-    template<typename U> auto constexpr operator-(const vec3<U>& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()-std::declval<vec3<U>>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator-(const U& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()-std::declval<U>())>>){a-v,b-v,c-v};}
-    template<typename U> auto constexpr operator*(const tri3<U>& t)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()*std::declval<vec3<U>>())>>){a*t.a,b*t.b,c*t.c};}
-    template<typename U> auto constexpr operator*(const vec3<U>& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()*std::declval<vec3<U>>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator*(const U& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()*std::declval<U>())>>){a*v,b*v,c*v};}
-    template<typename U> auto constexpr operator/(const tri3<U>& t)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/t.a,b/t.b,c/t.c};}
-    template<typename U> auto constexpr operator/(const vec3<U>& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()/std::declval<vec3<U>>())>>){a/v,b/v,c/v};}
-    template<typename U> auto constexpr operator/(const U& v)const{return (tri3<vec3_inner_t<decltype(std::declval<vec3<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
-  struct meshtri:tri3<mesh_size>{
-    unsigned char flags=255;
-    // short unsigned int texture_id;
-    // vec2<short unsigned int> uv;vec2<short unsigned int> texdims;
-  };
-  struct model_t {
-    short unsigned int tricount;
-    meshtri* tris;
-    const char* name;
-   ~model_t() noexcept {free(tris);}
-  };
-  int dumptris(char* buffer,size_t buf_size,model_t* m){
-    int a=snprintf(buffer,buf_size,"%s:%u triangles:",m->name,m->tricount);
-    for(int i=0;i<m->tricount;i++){
-      if(a>buf_size){break;}
-      a+=snprintf(&buffer[a],buf_size-a,"triangle((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)),",
-        m->tris[i].a.x,
-        m->tris[i].a.y,
-        m->tris[i].a.z,
-        m->tris[i].b.x,
-        m->tris[i].b.y,
-        m->tris[i].b.z,
-        m->tris[i].c.x,
-        m->tris[i].c.y,
-        m->tris[i].c.z);
-    }
-    return a;
-  }
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
     float r1=cos(d/128.0*M_PI),r2=sin(d/128.0*M_PI);
     float axis_0_t=(axis_0*r1)-(axis_1*r2);
@@ -127,6 +27,116 @@ namespace mesh {
   template<typename T> inline tri3<T> rotateT(tri3<T>& v,char d){
     rotate(v.a.x,v.a.y,d);rotate(v.b.x,v.b.y,d);rotate(v.c.x,v.c.y,d);
     return v;
+  }
+  template<typename T> requires std::is_signed_v<T> vec3<T>* clipTriX(const tri3<T>& t,T x){//012,230
+    vec3<T>* out=(vec3<T>*)malloc(sizeof(vec3<T>)*4);
+    #define p0 t.a
+    #define p1 t.b
+    #define p2 t.c
+    #define o0 out[0]
+    #define o1 out[1]
+    #define o2 out[2]
+    #define o3 out[3]
+    o3={0,0,0};
+    char v=(p0.x>=x)+(p1.x>=x)+(p2.x>=x);
+    switch(v){
+      case 0:break;
+      case 1:{
+        if(p0.x>=x){
+          o0=p0;
+          o1={
+            x,
+            (p0.y-p1.y)/(p0.x-p1.x)*(x-p1.x)+p1.y,
+            (p0.z-p1.z)/(p0.x-p1.x)*(x-p1.x)+p1.z
+          };
+          o2={
+            x,
+            (p0.y-p2.y)/(p0.x-p2.x)*(x-p2.x)+p2.y,
+            (p0.z-p2.z)/(p0.x-p2.x)*(x-p2.x)+p2.z
+          };
+        }else if(p1.x>=x){
+          o0={
+            x,
+            (p1.y-p0.y)/(p1.x-p0.x)*(x-p0.x)+p0.y,
+            (p1.z-p0.z)/(p1.x-p0.x)*(x-p0.x)+p0.z
+          };
+          o1=p1;
+          o2={
+            x,
+            (p1.y-p2.y)/(p1.x-p2.x)*(x-p2.x)+p2.y,
+            (p1.z-p2.z)/(p1.x-p2.x)*(x-p2.x)+p2.z
+          };
+        }else{
+          o0={
+            x,
+            (p2.y-p0.y)/(p2.x-p0.x)*(x-p0.x)+p0.y,
+            (p2.z-p0.z)/(p2.x-p0.x)*(x-p0.x)+p0.z
+          };
+          o1={
+            x,
+            (p2.y-p1.y)/(p2.x-p1.x)*(x-p1.x)+p1.y,
+            (p2.z-p1.z)/(p2.x-p1.x)*(x-p1.x)+p1.z
+          };
+          o2=p2;
+        }
+        break;
+      }
+      case 2:{
+        if(p0.x<x){
+          o0={
+            x,
+            (p1.y-p0.y)/(p1.x-p0.x)*(x-p0.x)+p0.y,
+            (p1.z-p0.z)/(p1.x-p0.x)*(x-p0.x)+p0.z
+          };
+          o1=p1;
+          o2=p2;
+          o3={
+            x,
+            (p0.y-p2.y)/(p0.x-p2.x)*(x-p2.x)+p2.y,
+            (p0.z-p2.z)/(p0.x-p2.x)*(x-p2.x)+p2.z
+          };
+        }else if(p1.x<x){
+          o0=p0;
+          o1={
+            x,
+            (p0.y-p1.y)/(p0.x-p1.x)*(x-p1.x)+p1.y,
+            (p0.z-p1.z)/(p0.x-p1.x)*(x-p1.x)+p1.z
+          };
+          o2={
+            x,
+            (p1.y-p2.y)/(p1.x-p2.x)*(x-p2.x)+p2.y,
+            (p1.z-p2.z)/(p1.x-p2.x)*(x-p2.x)+p2.z
+          };
+          o3=p2;
+        }else{
+          o0=p0;
+          o1=p1;
+          o2={
+            x,
+            (p1.y-p2.y)/(p1.x-p2.x)*(x-p2.x)+p2.y,
+            (p1.z-p2.z)/(p1.x-p2.x)*(x-p2.x)+p2.z
+          };
+          o3={
+            x,
+            (p0.y-p2.y)/(p0.x-p2.x)*(x-p2.x)+p2.y,
+            (p0.z-p2.z)/(p0.x-p2.x)*(x-p2.x)+p2.z
+          };
+        }
+        break;
+      }
+      case 3:{
+        return_original:
+        o0=t.a;o1=t.b;o2=t.c;
+      }
+    }
+    return out;
+    #undef p0
+    #undef p1
+    #undef p2
+    #undef o0
+    #undef o1
+    #undef o2
+    #undef o3
   }
   vec3<mesh_size> camera_position{-5.0f,0.0f,0.0f};
   vec3<char>      camera_rotation{0,0,0};//roll pitch yaw
@@ -139,114 +149,132 @@ namespace gui {
   inline tri2<scoord> toSSPT(tri3<mesh_size> t){
     return (tri2<scoord>){toSSPV(t.a),toSSPV(t.b),toSSPV(t.c)};
   }
-  void drawLine(scoord x0,scoord y0,mesh_size z0,scoord x1,scoord y1,mesh_size z1){
-    signed short int dx=(signed short int)x1-x0;
-    signed short int dy=(signed short int)y1-y0;
-    scoord &x0_=(x0<x1?x0:x1),&x1_=(x0_==x0?x1:x0),&y0_=(x0_==x0?y0:y1),&y1_=(x0_==x0?y1:y0);
-    mesh_size &z0_=(x0_==x0?z0:z1),&z1_=(x0_==x0?z1:z0);
-    if((abs(dx)>abs(dy))&&(dx!=0)){
-      float m=(float)dy/dx;
-      float mz=(z1-z0)/(dx);
-      scoord ly=(x0_>0)?m*(-1)+y0_:y0_;
-      scoord ny=y0_;
-      char c=(m>0)?'\\':'/';
-      for(scoord x=x0_;x<x1_;){
-        scoord y=ny;
-        float d=mz*(x-x0_)+z0_;
-        if(depth_buffer[x+y*term_dims.ws_col]>(d/FARPLANEX*255)){
-          depth_buffer[x+y*term_dims.ws_col]=(d/FARPLANEX*255);
-          putChar(x,y,(y!=ly||y!=ny)?c:'-');
-        }
-        ly=y;
-        ny=m*(++x-x0_)+y0_;
-      }
-    }else{
-      float m=(float)dx/dy;
-      float mz=(z1-z0)/(dy);
-      scoord lx=(y0_>0)?m*(-1)+x0_:x0_;
-      scoord nx=x0_;
-      char c=(m>0)?'\\':'/';
-      for(scoord y=y0_;y<y1_;){
-        scoord x=nx;
-        float d=mz*(y-y0_)+z0_;
-        if(depth_buffer[x+y*term_dims.ws_col]>(d/FARPLANEX*255)){
-          depth_buffer[x+y*term_dims.ws_col]=(d/FARPLANEX*255);
-          putChar(x,y,(x!=lx||x!=nx)?c:'|');
-        }
-        lx=x;
-        nx=m*(++y-y0_)+x0_;
-      }
-    }
-  }
-  void drawCTri(scoord x0,scoord y0,scoord x1,scoord y1,scoord x2,scoord y2){
-    scoord minx=max(min(x0,x1,x2),0),miny=max(min(y0,y1,y2),0),maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
-    for(scoord x=minx;x<maxx;x++){
-      for(scoord y=miny;y<maxy;y++){
-        if(triarea(x,y,x1,y1,x2,y2)>=0){if(triarea(x0,y0,x,y,x2,y2)>=0){if(triarea(x0,y0,x1,y1,x,y)>=0){
-          putChar(x,y,'#');
-        }}}
-      }
-    }
-    putChar(x0,y0,'+');
-    putChar(x1,y1,'+');
-    putChar(x2,y2,'+');
-  }
-  void drawMTri(const meshtri& t){
-    tri3<mesh_size> t1=t-camera_position;
-    rotateT(t1,camera_rotation.z);
+  void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
-    scoord x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
-           x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
-           x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
-    scoord minx=max(min(x0,x1,x2),0),miny=max(min(y0,y1,y2),0),maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),maxy=min(max(y0,y1,x2),gui::term_dims.ws_row);
+    signed short int
+      x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
+      x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
+      x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
+    scoord minx=max(min(x0,x1,x2),0),
+           miny=max(min(y0,y1,y2),0),
+           maxx=min(max(x0,x1,x2),gui::term_dims.ws_col),
+           maxy=min(max(y0,y1,y2),gui::term_dims.ws_row);
+    float area=triarea(
+      SCAST(float,x0),SCAST(float,y0),
+      SCAST(float,x1),SCAST(float,y1),
+      SCAST(float,x2),SCAST(float,y2));
+    if(area<0.1){return;}
     for(scoord x=minx;x<maxx;x++){
       for(scoord y=miny;y<maxy;y++){
         vec3<float> barycentric;
-        if((barycentric.x=triarea(
-          SCAST(float,x),  SCAST(float,y),
-          SCAST(float,x1), SCAST(float,y1),
-          SCAST(float,x2), SCAST(float,y2)
-        ))>=0){
-          if((barycentric.y=triarea(
-            SCAST(float,x0), SCAST(float,y0),
-            SCAST(float,x),  SCAST(float,y),
-            SCAST(float,x2), SCAST(float,y2)
-          ))>=0){
-            if((barycentric.z=triarea(
-              SCAST(float,x0), SCAST(float,y0),
-              SCAST(float,x1), SCAST(float,y1),
-              SCAST(float,x),  SCAST(float,y)
-            ))>=0){
-              barycentric=barycentric/triarea(
-                SCAST(float,x0),SCAST(float,y0),
-                SCAST(float,x1),SCAST(float,y1),
-                SCAST(float,x2),SCAST(float,y2));
-              float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
-              float d=(depth/FARPLANEX);
-              if((depth_buffer[x+y*term_dims.ws_col]) > (unsigned char)(d*255)){
-                depth_buffer[x+y*term_dims.ws_col]=(unsigned char)(d*255);
-                char c=charsbyopacity[(int)(d*opacitylength)];
-                if(0<depth&&depth<FARPLANEX){
-                  putChar(x,y,c);
-                  putColor(x,y,colors::col(colors::red,colors::black));
-                }
-              }
+        if(((barycentric.x=triarea(
+          SCAST(float,x), SCAST(float,y),
+          SCAST(float,x1),SCAST(float,y1),
+          SCAST(float,x2),SCAST(float,y2)
+        ))>=0)&&((barycentric.y=triarea(
+          SCAST(float,x0),SCAST(float,y0),
+          SCAST(float,x), SCAST(float,y),
+          SCAST(float,x2),SCAST(float,y2)
+        ))>=0)&&((barycentric.z=triarea(
+          SCAST(float,x0),SCAST(float,y0),
+          SCAST(float,x1),SCAST(float,y1),
+          SCAST(float,x), SCAST(float,y)
+        ))>=0)){
+          barycentric=barycentric/area;
+          float depth=(barycentric.x*z0+barycentric.y*z1+barycentric.z*z2);
+          float d=(depth/farplanex);
+          if((depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]) > (d*255)){
+            depth_buffer[toSSPI(x,gui::term_dims.ws_row-y)]=(unsigned char)(d*255);
+            if((0<depth)&&(depth<farplanex)){
+              float u=uv0.x*barycentric.x+uv1.x*barycentric.y+uv2.x*barycentric.z;
+              float v=uv0.y*barycentric.x+uv1.y*barycentric.y+uv2.y*barycentric.z;
+              u*=tex.width; 
+              v*=tex.height;
+              int iu=(((int)u%tex.width+tex.width)%tex.width);
+              int iv=tex.height-(((int)v%tex.height+tex.height)%tex.height);
+              int idx=(iv*tex.width+iu)*3;
+              unsigned char r=tex.pixels[idx],g=tex.pixels[idx+1],b=tex.pixels[idx+2];
+              char colorIdx = (r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);//don't need to store brightness just calculate it as bool earlier
+              char c = charsbyopacity[(int)(d*opacitylength)];
+              putChar(x,gui::term_dims.ws_row-y,c);
+              putColor(x,gui::term_dims.ws_row-y,colors::col((colors::color)colorIdx,colors::black));
             }
+            // if(logmisc){
+              // fprintf(debug,"(%u,%u,%f),",x,y,depth);
+              // fprintf(debug,"(%u,%u,%u),",x,y,depth_buffer[toSSPI(x,y)]);
+            // }
           }
         }
       }
     }
+    // fflush(debug);
   }
-  void drawMLines(const meshtri& t){
-    tri3<mesh_size> t1=t-camera_position;
+  void drawMTri(const meshtri& t, assets::texture_t& tex){
+    meshtri t1=t-camera_position;
     rotateT(t1,camera_rotation.z);
-    mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
-    scoord x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
-           x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
-           x2=toSSPX(t1.c.y,z2),y2=toSSPY(t1.c.z,z2);
-    drawLine(x0,y0,z0,x1,y1,z1);
-    drawLine(x1,y1,z1,x2,y2,z2);
-    drawLine(x2,y2,z2,x0,y0,z0);
+    char v=(t1.a.x<1)+(t1.b.x<1)+(t1.c.x<1);
+    if(v==3){return;}
+    if(v!=0){
+      vec3<mesh_size>* clipped=clipTriX(t1,1.0f);//optimize to reuse
+      meshtri t2{
+        clipped[0],
+        clipped[1],
+        clipped[2]};
+      vec3<mesh_size> a1=(t1.c-t1.a).cross(t1.b-t1.a);//really this is double the area but we don't care
+      mesh_size a2=(a1*a1).total();
+      vec3<mesh_size> a=(t1.b-t2.a).cross(t1.c-t2.a);//because it's ratios of areas
+      vec3<mesh_size> b=(t1.c-t2.a).cross(t1.a-t2.a);
+      vec3<mesh_size> c=(t1.a-t2.a).cross(t1.b-t2.a);
+      t2.uv0=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+      a=(t1.b-t2.b).cross(t1.c-t2.b);
+      b=(t1.c-t2.b).cross(t1.a-t2.b);
+      c=(t1.a-t2.b).cross(t1.b-t2.b);
+      t2.uv1=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+      a=(t1.b-t2.c).cross(t1.c-t2.c);
+      b=(t1.c-t2.c).cross(t1.a-t2.c);
+      c=(t1.a-t2.c).cross(t1.b-t2.c);
+      t2.uv2=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+      if(logmisc){fprintf(debug,"polygon((%f,%f),(%f,%f),(%f,%f)),",t2.uv0.x,t2.uv0.y,t2.uv1.x,t2.uv1.y,t2.uv2.x,t2.uv2.y);fflush(debug);}
+      drawTri(t2,t2.uv0,t2.uv1,t2.uv2,tex);
+      if(clipped[3].x!=0.0f){
+        meshtri t3{
+          clipped[2],
+          clipped[3],
+          clipped[0]};
+      a=(t1.b-t3.a).cross(t1.c-t3.a);
+      b=(t1.c-t3.a).cross(t1.a-t3.a);
+      c=(t1.a-t3.a).cross(t1.b-t3.a);
+      t3.uv0=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+      a=(t1.b-t3.b).cross(t1.c-t3.b);
+      b=(t1.c-t3.b).cross(t1.a-t3.b);
+      c=(t1.a-t3.b).cross(t1.b-t3.b);
+      t3.uv1=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+      a=(t1.b-t3.c).cross(t1.c-t3.c);
+      b=(t1.c-t3.c).cross(t1.a-t3.c);
+      c=(t1.a-t3.c).cross(t1.b-t3.c);
+      t3.uv2=
+        t1.uv0*(float)sqrt((a*a).total()/a2)+
+        t1.uv1*(float)sqrt((b*b).total()/a2)+
+        t1.uv2*(float)sqrt((c*c).total()/a2);
+        drawTri(t3, t3.uv0, t3.uv1, t3.uv2, tex);
+      }
+      free(clipped);
+    }else{drawTri(t1, t1.uv0, t1.uv1, t1.uv2, tex);/*merge uvs into tri2<float>*/}
   }
 }
 #endif

@@ -1,0 +1,16 @@
+solid poster
+facet normal -1 0 0
+outer loop
+vertex 3 1 -1
+vertex 3 -3 -1
+vertex 3 1 1
+endloop
+endfacet
+facet normal -1 0 0
+outer loop
+vertex 3 -3 1
+vertex 3 1 1
+vertex 3 -3 -1
+endloop
+endfacet
+endsolid poster

@@ -1,6 +1,7 @@
 #ifndef RATATOUILLE_H//we're just going to write a disgusting header only library
 #define RATATOUILLE_H//ratatouille is now our linux-only version. will do portability with windows later.
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
@@ -8,8 +9,10 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include <type_traits>
+#include <types.hpp>
 #include <colors.hpp>
+#include <assets.hpp>
+#include <ctype.h>
 #define DO(x) if(x)
 #define ORDIE(s) {::gui::stop(s);exit(1);}
 #define BRKST(X,Y) if(::gui::state&STATE_ ## X){Y ::gui::state&=~STATE_ ## X;} //did not want to write out if(state&whatever) like 80 times
@@ -20,14 +23,16 @@
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
 namespace gui {
+  menu_t* selected_menu;
+  scoord selected_btn;
   using namespace colors;
-  typedef unsigned short int scoord;//coordinate on the screen, in characters
-  typedef unsigned char sfrac;//represents the fraction of width/this
 
   const tcflag_t RAWMODE_LFLAGS=~(ECHO|ICANON|/*ISIG|*/IEXTEN),//remember that ~ is bitwise not
                  RAWMODE_IFLAGS=~(BRKINT|ICRNL|INPCK|ISTRIP|IXON),
                  RAWMODE_OFLAGS=~(OPOST);//terminal bits to set for "raw" mode
   const int BLOCKED_SIGS=SIGTTOU|SIGSTOP|SIGTTIN|SIGTSTP;
+
+  assets::font_t default_font;
 
   char state='\0';//see macros for which bits mean what
 
@@ -57,9 +62,11 @@ namespace gui {
   void stop(const char* err){
     if(state&STATE_ICLR){return;}
     BRKST(SIGS,
+      printf("\n\r\x1b""[0mrestoring sigset\n\r");
       if(sigprocmask(SIG_SETMASK,&old_sigset,NULL)==-1){perror("couldn't restore signal set");}
     )
     BRKST(TERM,
+      printf("restoring terminal state\n\r");
       if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&old_term_state)){perror("couldn't to restore terminal state");}
     )
     BRKST(TBUF,if(term_buffer){free(term_buffer);term_buffer=NULL;max_chars=0;})
@@ -68,7 +75,7 @@ namespace gui {
     if(err){perror(err);}
     state|=STATE_ICLR;
   }
-  void stop() {state|=STATE_ICLR;stop(NULL);}
+  void stop() {stop(NULL);}
 
   void sig_handler(int sig){
     printf("bazinga%u",sig);
@@ -84,11 +91,11 @@ namespace gui {
   void init(){
     //make sure we're not doing things twice. idiot.
     DO(state)ORDIE("couldn't init r@@2e: we already started");
+    puts("INITIALIZING TERMINAL ILLNESS");
+    atexit(stop);
 
     //get starting terminal state so we can put it back once we're done
     DO(tcgetattr(STDIN_FILENO,&old_term_state))ORDIE("coudln't get initial terminal state");
-    atexit(stop);
-    state|=STATE_TERM;
 
     //set various terminal flags
     cur_term_state=old_term_state;
@@ -96,6 +103,7 @@ namespace gui {
     cur_term_state.c_cc[VMIN] =0;//double 0 means return asap and 0 if nothing's available
     cur_term_state.c_cc[VTIME]=0;
     DO(set_term_flags(RAWMODE_LFLAGS,RAWMODE_IFLAGS,RAWMODE_OFLAGS))ORDIE("couldn't set terminal state");
+    state|=STATE_TERM;
 
     //block the TTOU signal which triggers program stop when trying to write to terminal from a background process
     DO(sigemptyset(&cur_sigset)==-1)                      ORDIE("couldn't initialize empty signal set");
@@ -129,10 +137,10 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)((x/d+1)*term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
-  inline scoord toSSPI(scoord x,scoord y){return (y*term_dims.ws_col)+x;}
+  inline const scoord toSSPY(T y,T d){return (scoord)((y/d+1)*term_dims.ws_row/2);}
+  inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
     scoord p=toSSPI(x,y);
@@ -149,29 +157,127 @@ namespace gui {
     return d;
   }
 
+  scoord putFText(assets::font_t* fontp,const char* text,unsigned int length,scoord x1,scoord y1,scoord width,scoord height,text_align align){
+    if(text==NULL){return 0;}
+    assets::font_t* font=fontp?fontp:&gui::default_font;
+    scoord x=x1,y=y1,w=0,lw=0;
+    unsigned int last_char=0;
+    for(unsigned int i=0;(i<=length)&&(y<(y1+height));i++){
+      w+=font->sizex[(unsigned char)text[i]];
+      if((w-lw)>width){
+        if(x!=x1){
+          y+=(font->sizey);
+          x=x1;
+          last_char++;
+        }
+        for(unsigned int j=last_char;j<i-1;j++){
+          unsigned char sizex=font->sizex[(unsigned char)text[j]];
+          for(unsigned int k=0;(k<font->sizey)&&((y+k)<(height+y1));k++){
+            memcpy(
+              &term_buffer[toSSPI(x,y+k)],
+              &font->map[(unsigned char)text[j]][k*sizex],
+              sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,sizex);
+          }
+          x+=sizex;
+        }
+        x=x1;y+=font->sizey;last_char=i-1;w=0;
+        continue;
+      }
+      if((text[i]==' ')||(i==length)||(text[i]=='\n')){
+        if(w>width){
+          y+=font->sizey;x=x1;w-=lw;//font->sizex[(unsigned char)text[i+1]];
+          last_char++;
+        }
+        lw=w;
+        for(unsigned int j=last_char;j<i;j++){
+          unsigned char sizex=font->sizex[(unsigned char)text[j]];
+          for(unsigned int k=0;(k<font->sizey)&&((y+k)<(height+y1));k++){
+            memcpy(
+              &term_buffer[toSSPI(x,y+k)],
+              &font->map[(unsigned char)text[j]][k*sizex],
+              sizex);
+            memset(&color_buffer[toSSPI(x,y+k)],default_color,sizex);
+          }
+          x+=sizex;
+        }
+        
+        if((text[i]=='\n')||(i==length)){
+          do{
+            i++;y+=font->sizey;
+          }while(text[i]=='\n');
+          x=x1;w=0;
+        }
+        last_char=i;
+      }
+    }
+    return y;
+  }
+
+  scoord putFText(gui::text_t text,scoord x,scoord y,scoord width,scoord height){
+    return putFText(text.font,text.text,text.length,x,y,width,height,text.alignment);
+  }
+
+  void putMenu(menu_t* menu,scoord x,scoord y){//needs bounds checking
+    scoord y1=y;
+    putChar(x,y,menu->borders[4]);
+    putChar(x+menu->sizex,y,menu->borders[4]);
+    putChar(x,y+menu->sizey,menu->borders[4]);
+    putChar(x+menu->sizex,y+menu->sizey,menu->borders[4]);
+    for(scoord i=y+1;i<y+menu->sizey;i++){//fix all those toSSPI calls and replace with like 2 calculations
+      putChar(x,i,menu->borders[2]);
+      color_buffer[toSSPI(x,i)]=default_color;
+      putChar(x+menu->sizex,i,menu->borders[3]);
+      color_buffer[toSSPI(x+menu->sizex,i)]=default_color;
+    }
+    memset(&term_buffer[toSSPI(x+1,y)],menu->borders[0],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y)],default_color,menu->sizex+1);
+    memset(&term_buffer[toSSPI(x+1,y+menu->sizey)],menu->borders[1],menu->sizex-1);
+    memset(&color_buffer[toSSPI(x,y+menu->sizey)],default_color,menu->sizex+1);
+    // term_buffer[toSSPI(x+1,y)+sprintf(&term_buffer[toSSPI(x+1,y)],"%i",menu->sizey)]='!';
+    y++;
+    for(scoord i=0;(i<menu->textcount)&&(y<(menu->sizey+y1));i++){
+      scoord HATE=y;
+      y=putFText(menu->items[i],x+1,y,menu->sizex-1,menu->sizey+y1-y);
+    }
+    for(scoord i=0;(i<menu->btncount)&&(y<(menu->sizey+y1));i++){
+      scoord y2=y;
+      y=putFText(menu->buttons[i],x+3,y,menu->sizex-3,menu->sizey+y1-y);//i know why it works
+      y2+=(y-y2-1)/2;
+      putChar(x+1,y2,(i==selected_btn)?'>':'-');
+      putChar(x+2,y2,' ');
+      color_buffer[toSSPI(x+1,y2)]=default_color;
+      color_buffer[toSSPI(x+2,y2)]=default_color;
+    }
+  }//*/
+
   void drawFrame(){
-    DO(fwrite("\x1b[2J\x1b[0;0H",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
-    color_t last_color_fg=color_buffer[0]&0x0F;
-    color_t last_color_bg=color_buffer[0]&0xF0;
+    DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
+    color_t last_color_fg=color_buffer[0]&0x1F;
+    color_t last_color_bg=color_buffer[0]&0xE0;
     scoord last_char=0;
+    char* buf=(char*)malloc(8);
+    buf[7]='\0';
+    fputs(ansi_fg(color_buffer[0],buf),stdout); // dont ignore the first color, becouse acctualy, we need these
+    fputs(ansi_bg(color_buffer[0],buf),stdout);
     for(scoord i=1;i<max_chars;i++){
-      bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);
-      bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);
+      bool fg_change=((color_buffer[i]&0x1F)!=last_color_fg);
+      bool bg_change=((color_buffer[i]&0xE0)!=last_color_bg);
       if(fg_change||bg_change){
         fwrite(term_buffer+last_char,1,i-last_char,stdout);
         if(fg_change){
           last_color_fg=color_buffer[i];
           if(bg_change){
-            fprintf(stdout,"%s%s",ansi_fg(color_buffer[i]),ansi_bg(color_buffer[i]));
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }else{
-            fprintf(stdout,"%s",ansi_fg(color_buffer[i]));
-            fseek(stdout,-1,SEEK_CUR);
+            fputs(ansi_fg(color_buffer[i],buf),stdout);
           }
         }else{
           if(bg_change){
-            fprintf(stdout,"%s",ansi_bg(color_buffer[i]));
+            fputs(ansi_bg(color_buffer[i],buf),stdout);
             fseek(stdout,-1,SEEK_CUR);
             last_color_bg=color_buffer[i];
           }
@@ -180,6 +286,7 @@ namespace gui {
       }
     }
     fwrite(term_buffer+last_char,1,max_chars-last_char,stdout);
+    free(buf);
     // fseek(stdout,-1,SEEK_CUR);
     fflush(stdout);
   }
@@ -188,3 +295,4 @@ namespace gui {
 #undef ORDIE
 #undef BRKST
 #endif
+
