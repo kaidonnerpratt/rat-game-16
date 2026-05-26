@@ -23,6 +23,7 @@
 #define STATE_CBUF 0b00001000
 #define STATE_DBUF 0b00010000
 #define STATE_BBUF 0b00100000
+#define STATE_ASCR 0b01000000
 #define STATE_ICLR 0b10000000
 namespace gui {
   menu_t* selected_menu;
@@ -79,8 +80,10 @@ namespace gui {
 
   void stop(const char* err){
     if(state&STATE_ICLR){return;}
+    BRKST(ASCR,printf("\x1b[c""\x1b""[?1049l");)
+    printf("CURING TERMINAL ILLNESS\n\r");
     BRKST(SIGS,
-      printf("\n\r\x1b""[0mrestoring sigset\n\r");
+      printf("\x1b""[0mrestoring sigset\n\r");
       if(sigprocmask(SIG_SETMASK,&old_sigset,NULL)==-1){perror("couldn't restore signal set");}
     )
     BRKST(TERM,
@@ -117,6 +120,11 @@ namespace gui {
 
     //get starting terminal state so we can put it back once we're done
     DO(tcgetattr(STDIN_FILENO,&old_term_state))ORDIE("coudln't get initial terminal state");
+
+    //enable alternate screen buffer
+    //https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#common-private-modes
+    printf("\x1b[?1049h");
+    state|=STATE_ASCR;
 
     //set various terminal flags
     cur_term_state=old_term_state;
@@ -293,13 +301,15 @@ namespace gui {
 
   void drawFrame(){
     DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
-    color_t last_color_fg=color_buffer[0]&0x0F;
-    color_t last_color_bg=color_buffer[0]&0xF0;
+    color_t last_color_fg=color_buffer[0]&0x0F;//why the FUCK would he have bits 3 and 4 be
+    color_t last_color_bg=color_buffer[0]&0xF0;//brightness instead of 3 and 7 like a normal person
     scoord last_char=0;
     char* buf=(char*)malloc(8);
     buf[7]='\0';
-    for(scoord i=1;i<max_chars;i++){
-      bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);
+    fputs(ansi_fg(color_buffer[0],buf),stdout); // dont ignore the first color, becouse acctualy, we need these
+    fputs(ansi_bg(color_buffer[0],buf),stdout);
+    for(scoord i=1;i<max_chars;i++){//could def use optimization to minimize color calls (combine fg & bg,
+      bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);//minimize write ops)
       bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);
       if(fg_change||bg_change){
         fwrite(term_buffer+last_char,1,i-last_char,stdout);
@@ -308,9 +318,9 @@ namespace gui {
           if(bg_change){
             fputs(ansi_fg(color_buffer[i],buf),stdout);
             fputs(ansi_bg(color_buffer[i],buf),stdout);
-            fseek(stdout,-1,SEEK_CUR);
-            last_color_bg=color_buffer[i];
-          }else{
+            fseek(stdout,-1,SEEK_CUR);//trailing \0 could be prevented by ansi_fg returning a thing
+            last_color_bg=color_buffer[i];//would look like fwrite(buf,1,ansi_fg(...),stdout)
+          }else{//where the ansi_fg and bg functions return the amount of chars to write
             fputs(ansi_fg(color_buffer[i],buf),stdout);
           }
         }else{
