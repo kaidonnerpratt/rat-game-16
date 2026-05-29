@@ -1,6 +1,3 @@
-# echo "" > log.txt
-# echo ${@}
-# exit 0
 mkdir debug 2>/dev/null
 if [ "$1" = "debug" ];then
   if [ "$2" = "preprocess" ];then
@@ -12,6 +9,7 @@ if [ "$1" = "debug" ];then
     fi
     echo preprocessing success
   else
+    echo compiling debug
     gcc -std="c++20" -I./src -g ./src/main.cc -lstdc++ -lm -o ./debug/debug.out 2>log.txt #change something maybe
     if test $(stat -c%s ./log.txt) -gt 1; then
       echo debug didn\'t compile \:\(
@@ -31,6 +29,7 @@ if [ "$1" = "debug" ];then
   fi
   exit 0
 fi
+echo compiling
 gcc -std="c++20" -Wall -I./src ./src/main.cc -lstdc++ -lm 2>log.txt
 if test $(stat -c%s ./log.txt) -gt 1; then
   echo didn\'t compile \:\(

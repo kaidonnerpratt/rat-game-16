@@ -101,7 +101,7 @@ namespace gui {
   }
   void stop() {stop(NULL);}
 
-  void sig_handler(int sig){//lowk forgot to make this part work but like who cares
+  void sig_handler(int sig){//not using mode bit ISIG so doesn't proc (i think)
     printf("bazinga%u",sig);
     FILE* g = fopen("log","w+");
     fprintf(g,"%u\n",sig);
@@ -130,7 +130,7 @@ namespace gui {
     cur_term_state=old_term_state;
     cur_term_state.c_cflag|=CS8;//make sure 8 bit width characters
     cur_term_state.c_cc[VMIN] =0;//double 0 means return asap and 0 if nothing's available
-    cur_term_state.c_cc[VTIME]=0;
+    cur_term_state.c_cc[VTIME]=0;//(non blocking input reads)
     DO(set_term_flags(RAWMODE_LFLAGS,RAWMODE_IFLAGS,RAWMODE_OFLAGS))ORDIE("couldn't set terminal state");
     state|=STATE_TERM;
 
@@ -261,7 +261,6 @@ namespace gui {
     return y;
 #undef align_stuff
   }
-
   scoord putFText(gui::text_t text,scoord x,scoord y,scoord width,scoord height){
     return putFText(text.font,text.text,text.length,x,y,width,height,text.alignment);
   }
@@ -298,6 +297,19 @@ namespace gui {
       color_buffer[toSSPI(x+2,y2)]=default_color;
     }
   }
+  void putSprite(assets::sprite_t* sprite,scoord x,scoord y){
+    if((x>term_dims.ws_col)||(y>term_dims.ws_row)){return;}
+    for(scoord y1=0;(y1<term_dims.ws_row-y)&&(y1<sprite->height);y1++){
+      memcpy(&term_buffer[toSSPI(x,y1+y)],&sprite->chars[y1*sprite->width],min(sprite->width,(unsigned)(term_dims.ws_col-x)));
+      for(scoord x1=0;(x1<sprite->width)&&(x1<(term_dims.ws_row-x));x1++){
+        unsigned char r=sprite->pixels[3*((y1*sprite->width)+x1)],
+        g=sprite->pixels[3*((y1*sprite->width)+x1)+1],
+        b=sprite->pixels[3*((y1*sprite->width)+x1)+2];
+        char c=(r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);
+        putColor(x1+x,y1+y,colors::col((colors::color)c,colors::black));
+      }
+    }
+  }
 
   void drawFrame(){
     DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
@@ -306,8 +318,8 @@ namespace gui {
     scoord last_char=0;
     char* buf=(char*)malloc(8);
     buf[7]='\0';
-    fputs(ansi_fg(color_buffer[0],buf),stdout); // dont ignore the first color, becouse acctualy, we need these
-    fputs(ansi_bg(color_buffer[0],buf),stdout);
+    fputs(ansi_fg(color_buffer[0],buf),stdout);//ear kai
+    // fputs(ansi_bg(color_buffer[0],buf),stdout);
     for(scoord i=1;i<max_chars;i++){//could def use optimization to minimize color calls (combine fg & bg,
       bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);//minimize write ops)
       bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);

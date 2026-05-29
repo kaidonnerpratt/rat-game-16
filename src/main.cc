@@ -33,6 +33,8 @@ assets::font_t f_avatar;
 
 assets::asset3d_t scene;
 
+assets::sprite_t sprite;
+
 gui::menu_t mainmenu;
 gui::menu_t pausemenu;
 
@@ -49,8 +51,9 @@ void drawWorld(){
     gui::putMenu(&pausemenu,0,0);
   }else{
     for(unsigned int i=0;i<scene.mesh.tricount;i++){
-      gui::drawMTri(scene.mesh.tris[i],scene.textures[scene.tex_binds[i]]);
+      // gui::drawMTri(scene.mesh.tris[i],scene.textures[scene.tex_binds[i]]);
     }
+    gui::putSprite(&sprite,5,5);
   }
 }
 void buttonContinue(){
@@ -71,6 +74,11 @@ void loadFonts(){
 void loadModels(){
   puts("LOADING MODELS");
   scene=assets::readAsset3d("./assets/newscene.rgmdl");//ari i'm going to ear you
+}
+void loadSprites(){
+  puts("LOADING SPRITES");
+  sprite=assets::readRGVTX("./assets/texture/scrunkle.rgvtx",20,10);
+  printf("%ux%u\n",sprite.width,sprite.height);
 }
 void loadMenus(){
   mainmenu={
@@ -109,6 +117,7 @@ int main() {
   loadFonts();
   loadModels();
   loadMenus();
+  loadSprites();
   gamestate.drawFunc=drawMainMenu;
   gui::init();
   unsigned char escapes=0;

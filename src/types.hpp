@@ -10,9 +10,12 @@ namespace colors {
   typedef unsigned char color_t;//4 bits for fg and bg. bg lshift 4
 }
 namespace assets {
-  struct texture_t {
-      unsigned int width, height;
-      unsigned char* pixels;
+  struct texture_t{
+    unsigned int width, height;
+    unsigned char* pixels;
+  };
+  struct sprite_t:texture_t{//SFAWTDE or SFINAE or something
+    char* chars;
   };
   #define UPPER(f) &f.map[(unsigned char)'A']
   #define LOWER(f) &f.map[(unsigned char)'a']
@@ -28,7 +31,6 @@ namespace assets {
 }
 namespace gui {
   typedef unsigned short int scoord;//coordinate on the screen, in characters
-  typedef unsigned char sfrac;//represents the fraction of width/this
   enum text_align{
     LEFT,CENTER,RIGHT//tbd
   };
@@ -60,6 +62,8 @@ namespace mesh {
     template<typename U> auto constexpr operator*(const U& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y};}
     template<typename U> auto constexpr operator/(const U& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v};}
+    template<typename U> constexpr operator U()const;
+    auto constexpr magnitude()const{return sqrt((x*x)+(y*y));}
     auto constexpr total()const{return x+y;}
   };//all of these should implement https://cplusplus.com/reference/type_traits/is_nothrow_move_constructible/
   template<typename T> requires arith<T>&&comp<T> struct vec3 {
@@ -80,6 +84,7 @@ namespace mesh {
   template<typename T> struct vec_inner<vec2<T>>{using type=T;};
   template<typename T> struct vec_inner<vec3<T>>{using type=T;};
   template<typename T> using  vec_inner_t=typename vec_inner<T>::type;
+  template<class T> template<class U> constexpr mesh::vec2<T>::operator U() const {return vec2<vec_inner_t<U>>{(vec_inner_t<U>)x,(vec_inner_t<U>)y};}
   template<typename T> requires arith<T>&&comp<T> struct tri2 {
     vec2<T> a,b,c;
     template<typename U> auto constexpr operator+(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+t.a,b+t.b,c+t.c};}
@@ -94,7 +99,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/t.a,b/t.b,c/t.c};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/v,b/v,c/v};}
     template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
+  };//welcome to templat hell
   template<typename T> requires arith<T>&&comp<T> struct tri3 {
     vec3<T> a,b,c;//my compiler is going to blow its brains out
     template<typename U> auto constexpr operator+(const tri3<U>& t)const{return (tri3<vec_inner_t<decltype(std::declval<vec3<T>>()+std::declval<vec3<U>>())>>){a+t.a,b+t.b,c+t.c};}

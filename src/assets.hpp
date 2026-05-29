@@ -32,13 +32,16 @@ tmp[VAR]='\0';VAR=atoi(tmp);
 #define NSPACE_TOKENS ' ','\n','#','=',',',')','('
 #define nspace(F,B) readUntil(F,B,NSPACE_TOKENS)
 namespace assets {
-  texture_t default_texture{
+  sprite_t default_texture{
     3,3,
     (unsigned char[]){
       000,000,000, 000,000,255, 000,255,000,
       000,255,255, 255,000,000, 255,000,255,
       255,255,255, 255,255,255, 255,255,255
-    }
+    },strdup(
+    "123"
+    "456"
+    "789")
   };
   static int debug_bad_stl;
   static unsigned int wspace(FILE* file,char* tmp){//read until not whitespace
@@ -55,14 +58,67 @@ namespace assets {
     return o;
   }
   template<typename... T> requires (std::is_convertible_v<T,char>&&...)
-  static int readUntil(FILE* file,char* tmp,T... c){
+  static int readUntil(unsigned int* l,FILE* file,char* tmp,T... c){
     int o=0;
     do{
       tmp[o]=fgetc(file);
+      if(l&&(tmp[o]=='\n')){(*l)++;}
       o++;
     }while(o<128&&((tmp[o-1]!=c)&&...));
     o--;ungetc(tmp[o],file);
     return o;
+  }
+  template<typename... T> requires (std::is_convertible_v<T,char>&&...)
+  static int readUntil(FILE* file,char* tmp,T... c){return readUntil(NULL,file,tmp,c...);}
+  static mesh::vec2<float> readV2f(FILE* file,char* tmp){//should use this for the transformations tbh i just forgot
+    mesh::vec2<float> out;
+    DO(fgetc(file)!='(')ORDIE("expected '(' to start vector");wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.x=atof(tmp);
+    DO(fgetc(file)!=',')ORDIE("expected ',' to separate vector coordinates");wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.y=atof(tmp);
+    wspace(file,tmp);DO(fgetc(file)!=')')ORDIE("expected ')' to end vector");
+    return out;
+  }
+  static mesh::vec3<float> readV3f(FILE* file,char* tmp){
+    mesh::vec3<float> out;
+    DO(fgetc(file)!='(')ORDIE("expected '(' to start vector");wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.x=atof(tmp);
+    DO(fgetc(file)!=',')ORDIE("expected ',' to separate vector coordinates");wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.y=atof(tmp);
+    DO(fgetc(file)!=',')ORDIE("expected ',' to separate vector coordinates");wspace(file,tmp);
+    tmp[nspace(file,tmp)]='\0';
+    out.z=atof(tmp);
+    wspace(file,tmp);DO(fgetc(file)!=')')ORDIE("expected ')' to end vector");
+    return out;
+  }
+  static int readColor(FILE* file,char* tmp){//first 3 bytes are r,g,b because this is normal
+    char c[4];//i hope int is 4 bytes :3
+    fread(c,1,3,file);
+    if(!memcmp(c,"rgb",3)){
+      auto [r,g,b]=readV3f(file,tmp);
+      c[0]=r;c[1]=g;c[2]=b;c[3]=0;
+      return *(int*)c;
+    }else if(!memcmp(c,"hsv",3)) ORDIE("unsupported color format")else ORDIE("unknown color format")
+  }
+  static std::vector<mesh::vec2<float>> readV2fVec(FILE* file,char* tmp){
+    std::vector<mesh::vec2<float>> out={};
+    wspace(file,tmp);
+    DO(fgetc(file)!='[')ORDIE("expected '[' to start array");
+    while(!feof(file)){
+      wspace(file,tmp);
+      out.push_back(readV2f(file,tmp));
+      char c=fgetc(file);
+      if(c!=','){
+        ungetc(c,file);break;
+      }
+    }
+    wspace(file,tmp);
+    DO(fgetc(file)!=']')ORDIE("expected ']' to end array");
+    return out;
   }
   static std::vector<mesh::meshtri> readSTL(const char* filename) {
     unsigned int i;
@@ -149,11 +205,11 @@ namespace assets {
     texture_t out;
     FILE* file=fopen(filename, "r");
     char* tmp = (char*)malloc(128);
-    DO(!file){fflush(stdout);perror("couldn't open texture file for read");return default_texture;};
+    DO(!file){fflush(stdout);perror("couldn't open texture file for read");return default_texture;errno=0;};
     int width, height, maxVal;
     char format=0;
     FEXPECTS("P3",2){//segfaults i guess
-      DO(memcmp(tmp,"P6",2))ORDIE("unsupported file format: not PPM3 or PPM6")else{
+      DO(memcmp(tmp,"P6",2)){fflush(stdout);perror("unsupported file format: not PPM3 or PPM6");return default_texture;errno=0;}{
         format=2;
       }
     }else{
@@ -194,41 +250,164 @@ namespace assets {
     }
     free(tmp);
     tmp=NULL;
-    DO(file){fclose(file);file=NULL;}else ORDIE("???")
+    DO(file){fclose(file);file=NULL;}else{fflush(stdout);perror("???");return default_texture;errno=0;}
     return out;
   }
-  static mesh::vec2<float> readV2f(FILE* file,char* tmp){//should use this for the transformations tbh i just forgot
-    mesh::vec2<float> out;
-    DO(fgetc(file)!='(')ORDIE("expected '(' to start vector");wspace(file,tmp);
-    tmp[nspace(file,tmp)]='\0';
-    out.x=atof(tmp);
-    DO(fgetc(file)!=',')ORDIE("expected ',' to separate vector coordinates");wspace(file,tmp);
-    tmp[nspace(file,tmp)]='\0';
-    out.y=atof(tmp);
-    wspace(file,tmp);DO(fgetc(file)!=')')ORDIE("expected ')' to end vector");
-    return out;
-  }
-  static std::vector<mesh::vec2<float>> readV2FVec(FILE* file,char* tmp){
-    std::vector<mesh::vec2<float>> out={};
-    wspace(file,tmp);
-    DO(fgetc(file)!='[')ORDIE("expected '[' to start array");
-    while(!feof(file)){
-      wspace(file,tmp);
-      out.push_back(readV2f(file,tmp));
-      char c=fgetc(file);
-      if(c!=','){
-        ungetc(c,file);break;
+  static void doSVGLine(FILE* file,char* tmp,mesh::vec2<unsigned> a,mesh::vec2<unsigned> b,int c,char d,sprite_t* out,unsigned width,unsigned height){
+    char e=(abs((int)a.x-(int)b.x)>abs((int)a.y-(int)b.y));
+    if(e){
+      if(a.x>b.x){
+        mesh::vec2<unsigned> f=a;
+        a=b;
+        b=f;
+      }
+    }else{
+      if(a.y>b.y){
+        mesh::vec2<unsigned> f=a;
+        a=b;
+        b=f;
       }
     }
-    wspace(file,tmp);
-    DO(fgetc(file)!=']')ORDIE("expected ']' to end array");
+    float s=((float)b.y-a.y)/(b.x-a.x);
+    static const float slopes[4]={tan(-M_PI_4*3/2),tan(-M_PI_4/2),tan(M_PI_4/2),tan(M_PI_4*3/2)};
+    if(!d){d=(s<slopes[0])?'|':((s<slopes[1])?'/':((s<slopes[2])?'-':((s<slopes[3])?'\\':'|')));}
+    if(e){
+      for(unsigned i=a.x;i<b.x;i++){
+        unsigned j=((int)((i-a.x)*s+a.y)*width)+i;
+        memcpy(&out->pixels[j*3],&c,3);//they call me the developer
+        out->chars[j]=d;
+      }
+    }else{
+      s=((float)b.x-a.x)/(b.y-a.y);
+      for(unsigned i=a.y;i<(b.y);i++){
+        unsigned j=(i*width)+(unsigned)((i-a.y)*s)+a.x;
+        memcpy(&out->pixels[j*3],&c,3);
+        out->chars[j]=d;
+      }
+    }
+  }
+  sprite_t readRGVTX(const char* filename,unsigned int width,unsigned int height){//these are getting
+    if(!filename||!width||!height||!*filename){//bloated and could use some trimming
+      printf("warning: illegal parameters (%p,%u,%u), using default texture >:(\n",filename,width,height);
+      return default_texture;
+    }
+    sprite_t out{width,height,(unsigned char*)malloc(3*width*height),(char*)malloc(width*height)};
+    memset(out.chars,'*',width*height);
+    memset(out.pixels,255,3*width*height);
+    FILE* file=fopen(filename,"r");
+    char* tmp = (char*)malloc(128);
+    DO(!out.pixels)ORDIE("couldn't alloc for texture")
+    DO(!file||!tmp||ferror(file))ORDIE("couldn't alloc for read or open for read")
+    unsigned int token_length;
+    size_t l=0;
+    char buddyholly='\0';
+    mesh::vec2<float> scale{1,1};
+    while(!feof(file)&&!ferror(file)){
+      wspace(file,tmp);
+      token_length=nspace(file,tmp);
+#define state(N) if((token_length==(l=strlen(N)))&&(!memcmp(tmp,N,l)))
+#define EXPCORDIE(N,C,N1) DO((buddyholly=fgetc(file))!=C){printf("%li:\'%c\':",ftell(file),buddyholly);fflush(stdout);ORDIE(N " " #C " " N1)}
+#define getParam(T,N,F) T N=F(file,tmp);EXPCORDIE("expected",',',"to separate parameters");wspace(file,tmp)
+      state("line"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start line call")
+        wspace(file,tmp);
+        getParam(mesh::vec2<float>,a,readV2f);
+        getParam(mesh::vec2<float>,b,readV2f);
+        int c=readColor(file,tmp);
+        char d='\0';
+        wspace(file,tmp);
+        char z=fgetc(file);
+        if(z==','){
+          wspace(file,tmp);EXPCORDIE("expected",'\'',"for character literal")
+          d=fgetc(file);
+          EXPCORDIE("expected",'\'',"for character literal")
+          wspace(file,tmp);
+          EXPCORDIE("expected",')',"to end line call")
+        }else DO(z!=')'){
+          printf("%li:\'%c\':",ftell(file),z);fflush(stdout);
+          ORDIE("expected ')' to end line call or ',' to continue line call")
+        }
+        doSVGLine(file,tmp,a*scale,b*scale,c,d,&out,width,height);
+      }else state("char"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start char call")
+        getParam(mesh::vec2<float>,p,readV2f);p=p*scale;
+        EXPCORDIE("expected",'\'',"for character literal")
+        char c=fgetc(file);
+        EXPCORDIE("expected",'\'',"for character literal")
+        wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end char call")
+        out.chars[((unsigned)p.y*width)+(unsigned)p.x]=c;
+      }else state("lines"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start line call")
+        wspace(file,tmp);
+        getParam(std::vector<mesh::vec2<float>>,pts,readV2fVec);
+        int c=readColor(file,tmp);
+        char d='\0';
+        wspace(file,tmp);
+        char z=fgetc(file);
+        if(z==','){
+          wspace(file,tmp);EXPCORDIE("expected",'\'',"for character literal")
+          d=fgetc(file);
+          EXPCORDIE("expected",'\'',"for character literal")
+          wspace(file,tmp);
+          EXPCORDIE("expected",')',"to end line call")
+        }else DO(z!=')'){
+          printf("%li:\'%c\':",ftell(file),z);fflush(stdout);
+          ORDIE("expected ')' to end line call or ',' to continue line call")
+        }
+        for(unsigned i=1;i<pts.size();i++){
+          doSVGLine(file,tmp,pts[i-1]*scale,pts[i]*scale,c,d,&out,width,height);
+        }
+      }else state("scale"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start scale call")
+        tmp[nspace(file,tmp)]='\0';scale.x=width/atof(tmp);
+        EXPCORDIE("expected",',',"to delimit parameters");wspace(file,tmp);
+        tmp[nspace(file,tmp)]='\0';scale.y=height/atof(tmp);wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end scale call")
+      }else state("triangle"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start triangle call")
+        wspace(file,tmp);
+        getParam(mesh::vec2<int>,a,readV2f);a=a*scale;
+        getParam(mesh::vec2<int>,b,readV2f);b=b*scale;
+        getParam(mesh::vec2<int>,c,readV2f);c=c*scale;
+        getParam(int,d,readColor);
+        EXPCORDIE("expected",'\'',"for character literal")
+        char e=fgetc(file);
+        EXPCORDIE("expected",'\'',"for character literal")
+        wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end triangle call")
+        for(int x=min(a.x,b.x,c.x);x<max(a.x,b.x,c.x);x++){
+          for(int y=min(a.y,b.y,c.y);y<max(a.y,b.y,c.y);y++){
+            if(
+              (triarea(x,y,b.x,b.y,c.x,c.y)>=0)&&
+              (triarea(a.x,a.y,x,y,c.x,c.y)>=0)&&
+              (triarea(a.x,a.y,b.x,b.y,x,y)>=0)
+            ){
+              memcpy(&out.pixels[3*(y*width+x)],&d,3);
+              out.chars[(y*width+x)]=e;
+            }
+          }
+        }
+      }else if(!feof(file)){
+#undef getParam
+#undef state//should prolly use allat in the other one but im lazy
+        printf("unrecognized token %.*s at %li! skipping line\n",token_length,tmp,ftell(file));
+        while(fgetc(file)!='\n'){}
+      }
+    }
     return out;
   }
   assets::asset3d_t readAsset3d(const char* name) {
 #define ORDIE1(S) {if(mesh_fp){free(mesh_fp);mesh_fp=NULL;}if(out.mesh.tris){free(out.mesh.tris);out.mesh.tris=NULL;}perror(S);if(file){fclose(file);file=NULL;}if(tmp){free(tmp);tmp=NULL;};exit(1);}
 #define ORTHENDIE1(c,s){c;ORDIE1(s)}
-    char buddyholly;
+#undef  EXPCORDIE
 #define EXPCORDIE(N,C,N1) DO((buddyholly=fgetc(file))!=C){printf("%li:\'%c\':",ftell(file),buddyholly);fflush(stdout);ORDIE1(N " " #C " " N1)}
+    char buddyholly;
     DO(strlen(name)>=128){perror("file name too long");exit(1);}
     printf("loading asset %s:\n",name);
     asset3d_t out{};
@@ -264,8 +443,8 @@ namespace assets {
         memcpy(out.mesh.tris,&tris[0],s);
       }else if((token_length==6)&&!(memcmp(tmp,"texmap",6))){
         DO(!mesh_fp[0])ORDIE1("expected model before texmap")
-        wspace(file,tmp);DO(fgetc(file)!='=')ORDIE1("expected '=' to assign texmap");wspace(file,tmp);
-        std::vector<mesh::vec2<float>> v2fv=readV2FVec(file,tmp);
+        wspace(file,tmp);EXPCORDIE("expected",'=',"to assign texmap");wspace(file,tmp);
+        std::vector<mesh::vec2<float>> v2fv=readV2fVec(file,tmp);
         unsigned int tricount=v2fv.size()/3;
         DO(tricount>out.mesh.tricount)ORDIE1("too many uv coordinates")
         for(unsigned int i=0;i<tricount;i++){
@@ -277,7 +456,7 @@ namespace assets {
       }else if(token_length==7){
         if(!memcmp(tmp,"texture",7)){
           DO(out.textures)ORDIE1("duplicate textures in asset")
-          wspace(file,tmp);DO(fgetc(file)!='=')ORDIE1("expected '=' to assign texture path");wspace(file,tmp);
+          wspace(file,tmp);EXPCORDIE("expected",'=',"to assign texture path");wspace(file,tmp);
           char c=fgetc(file);
           if(c=='['){
             while(c!=']'){
@@ -315,7 +494,7 @@ namespace assets {
         }
       }else if((token_length==9)&&!(memcmp(tmp,"tex_binds",9))){
         wspace(file,tmp);
-        DO(fgetc(file)!='=')ORDIE1("expected '=' to assign tex_binds")
+        EXPCORDIE("expected",'=',"to assign tex_binds")
         wspace(file,tmp);
         char c=fgetc(file);
         DO(c!='[')ORDIE1("expected '[' to start tex_binds")
@@ -333,29 +512,29 @@ namespace assets {
         DO(c!=']')ORDIE1("expected ']' to end tex_binds")
       }else if((token_length==11)&&!(memcmp(tmp,"model_scale",11))){
           DO(!out.mesh.tricount)ORDIE1("expected model before model_scale")
-          DO(fgetc(file)!='(')ORDIE1("expected '(' to start model_scale parameters")
+          EXPCORDIE("expected",'(',"to start model_scale parameters")
           tmp[nspace(file,tmp)]='\0';
           float x=atof(tmp);
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_scale parameters")
+          EXPCORDIE("expected",',',"to separate model_scale parameters")
           tmp[nspace(file,tmp)]='\0';
           float y=atof(tmp);
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_scale parameters")
+          EXPCORDIE("expected",',',"to separate model_scale parameters")
           tmp[nspace(file,tmp)]='\0';
           float z=atof(tmp);
-          DO(fgetc(file)!=')')ORDIE1("expected ')' to end model_scale parameters")
+          EXPCORDIE("expected",')',"to end model_scale parameters")
           mesh::vec3<float> scale{x,y,z};
           for(unsigned int i=0;i<out.mesh.tricount;i++){
             out.mesh.tris[i]=out.mesh.tris[i]*scale;
           }
       }else if(token_length==12){
         if(!memcmp(tmp,"texmap_scale",12)){
-          DO(fgetc(file)!='(')ORDIE1("expected '(' to start texmap_scale parameters")
+          EXPCORDIE("expected",'(',"to start texmap_scale parameters")
           tmp[nspace(file,tmp)]='\0';
           float x=atof(tmp);
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate texmap_scale parameters")
+          EXPCORDIE("expected",',',"to separate texmap_scale parameters")
           tmp[nspace(file,tmp)]='\0';
           float y=atof(tmp);
-          DO(fgetc(file)!=')')ORDIE1("expected ')' to end texmap_scale parameters")
+          EXPCORDIE("expected",')',"to end texmap_scale parameters")
           for(unsigned int i=0;i<out.mesh.tricount;i++){
             out.mesh.tris[i].uv0.x*=x;
             out.mesh.tris[i].uv1.x*=x;
@@ -366,32 +545,32 @@ namespace assets {
           }
         }else if(!memcmp(tmp,"model_offset",12)){
           DO(!out.mesh.tricount)ORDIE1("expected model before model_offset")
-          DO(fgetc(file)!='(')ORDIE1("expected '(' to start model_offset parameters")
+          EXPCORDIE("expected",'(',"to start model_offset parameters")
           tmp[nspace(file,tmp)]='\0';
           float x=atof(tmp);
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_offset parameters")
+          EXPCORDIE("expected",',',"to separate model_offset parameters")
           tmp[nspace(file,tmp)]='\0';
           float y=atof(tmp);
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_offset parameters")
+          EXPCORDIE("expected",',',"to separate model_offset parameters")
           tmp[nspace(file,tmp)]='\0';
           float z=atof(tmp);
-          DO(fgetc(file)!=')')ORDIE1("expected ')' to end model_offset parameters")
+          EXPCORDIE("expected",')',"to end model_offset parameters")
           mesh::vec3<float> off{x,y,z};
           for(unsigned int i=0;i<out.mesh.tricount;i++){
             out.mesh.tris[i]=out.mesh.tris[i]+off;
           }
         }else if(!memcmp(tmp,"model_rotate",12)){
           DO(!out.mesh.tricount)ORDIE1("expected model before model_rotate")
-          DO(fgetc(file)!='(')ORDIE1("expected '(' to start model_rotate parameters")
+          EXPCORDIE("expected",'(',"to start model_rotate parameters")
           tmp[nspace(file,tmp)]='\0';
           float x=atof(tmp)*255;
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_rotate parameters")
+          EXPCORDIE("expected",',',"to separate model_rotate parameters")
           tmp[nspace(file,tmp)]='\0';
           float y=atof(tmp)*255;
-          DO(fgetc(file)!=',')ORDIE1("expected ',' to separate model_rotate parameters")
+          EXPCORDIE("expected",',',"to separate model_rotate parameters")
           tmp[nspace(file,tmp)]='\0';
           float z=atof(tmp)*255;
-          DO(fgetc(file)!=')')ORDIE1("expected ')' to end model_rotate parameters")
+          EXPCORDIE("expected",')',"to end model_rotate parameters")
           for(unsigned int i=0;i<out.mesh.tricount;i++){
             if(x){
               mesh::rotate(out.mesh.tris[i].a.y,out.mesh.tris[i].a.z,(signed char)x);
@@ -430,7 +609,7 @@ namespace assets {
               if(c=='y'){if(s>=0){py=d;}if(s<=0){my=d;}}else
               if(c=='z'){if(s>=0){pz=d;}if(s<=0){mz=d;}}else
               ORDIE1("unrecognized texbind_fill character")
-              printf("%c%c:%u,%u\n",(s<0)?'-':((s>0)?'+':' '),c,(c=='x')?mx:((c=='y')?my:mz),(c=='x')?px:((c=='y')?py:pz));
+              // printf("%c%c:%u,%u\n",(s<0)?'-':((s>0)?'+':' '),c,(c=='x')?mx:((c=='y')?my:mz),(c=='x')?px:((c=='y')?py:pz));
               s=0;
               if((buddyholly=fgetc(file))!=')'){DO(buddyholly!=',')ORTHENDIE1(printf("%li:\'%c\':",ftell(file),c);fflush(stdout),"expected ',' to delimit texbind_fill or ')' to end it")}
               else{goto end;}
@@ -459,13 +638,13 @@ namespace assets {
           }
         }
       }else if((token_length==13)&&!memcmp(tmp,"texmap_offset",13)){
-        DO(fgetc(file)!='(')ORDIE1("expected '(' to start texmap_offset parameters")
+        EXPCORDIE("expected",'(',"to start texmap_offset parameters")
         tmp[nspace(file,tmp)]='\0';
         float x=atof(tmp);
-        DO(fgetc(file)!=',')ORDIE1("expected ',' to separate texmap_offset parameters")
+        EXPCORDIE("expected",',',"to separate texmap_offset parameters")
         tmp[nspace(file,tmp)]='\0';
         float y=atof(tmp);
-        DO(fgetc(file)!=')')ORDIE1("expected ')' to end texmap_offset parameters")
+        EXPCORDIE("expected",')',"to end texmap_offset parameters")
         for(unsigned int i=0;i<out.mesh.tricount;i++){
           if(uvassignedtris[i]){
             out.mesh.tris[i].uv0.x+=x;
@@ -477,7 +656,7 @@ namespace assets {
           }
         }
       }else if((token_length==18)&&!memcmp(tmp,"texmap_filldefault",18)){
-        DO(fgetc(file)!='(')ORDIE1("expected '(' to start texmap_filldefault parameters")
+        EXPCORDIE("expected",'(',"to start texmap_filldefault parameters")
         wspace(file,tmp);
         switch(fgetc(file)){
           case 'x':
@@ -509,7 +688,7 @@ namespace assets {
           default:
             ORDIE1("unrecognized texmap_filldefault parameter")
         }
-        wspace(file,tmp);DO(fgetc(file)!=',')ORDIE1("expected ',' to separate texmap_filldefault parameters")
+        wspace(file,tmp);EXPCORDIE("expected",',',"to separate texmap_filldefault parameters")
         switch(fgetc(file)){
           case 'x':
             for(unsigned int i=0;i<out.mesh.tricount;i++){
@@ -538,7 +717,7 @@ namespace assets {
           default:
             ORDIE1("unrecognized texmap_filldefault parameter")
         }
-        wspace(file,tmp);DO(fgetc(file)!=')')ORDIE1("expected ')' to end texmap_filldefault")
+        wspace(file,tmp);EXPCORDIE("expected",')',"to end texmap_filldefault")
         for(unsigned int i=0;i<out.mesh.tricount;i++){
           uvassignedtris[i]=1;
         }
