@@ -50,10 +50,12 @@ void drawWorld(){
   if(gamestate.paused){
     gui::putMenu(&pausemenu,0,0);
   }else{
+    memset(gui::term_buffer,'3',gui::term_dims.ws_col);
+    gui::putChar(0,0,'!');
     for(unsigned int i=0;i<scene.mesh.tricount;i++){
-      // gui::drawMTri(scene.mesh.tris[i],scene.textures[scene.tex_binds[i]]);
+      gui::drawMTri(scene.mesh.tris[i],scene.textures[scene.tex_binds[i]]);
     }
-    gui::putSprite(&sprite,5,5);
+    gui::putSprite(&sprite,0,0);
   }
 }
 void buttonContinue(){
@@ -77,8 +79,7 @@ void loadModels(){
 }
 void loadSprites(){
   puts("LOADING SPRITES");
-  sprite=assets::readRGVTX("./assets/texture/scrunkle.rgvtx",20,10);
-  printf("%ux%u\n",sprite.width,sprite.height);
+  sprite=assets::readRGVTX("./assets/sprite/hand.rgvtx",gui::term_dims.ws_col,gui::term_dims.ws_row);
 }
 void loadMenus(){
   mainmenu={
@@ -117,9 +118,9 @@ int main() {
   loadFonts();
   loadModels();
   loadMenus();
-  loadSprites();
   gamestate.drawFunc=drawMainMenu;
   gui::init();
+  // loadSprites();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;

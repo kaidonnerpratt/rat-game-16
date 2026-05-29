@@ -29,7 +29,7 @@ VAR--;ungetc(tmp[VAR],file);\
 tmp[VAR]='\0';VAR=atoi(tmp);
 #define WSPACEL(VAR) while((tmp[VAR]==' ')||(tmp[VAR]=='\n')||(tmp[VAR]=='#')){if(tmp[VAR]=='#'){while(tmp[VAR]!='\n'){VAR++;}}VAR++;}
 #define NSPACEL(VAR) while((tmp[VAR]!=' ')&&(tmp[VAR]!='\n')){VAR++;}
-#define NSPACE_TOKENS ' ','\n','#','=',',',')','('
+#define NSPACE_TOKENS ' ','\n','#','=',',',')','(','\'','\"'
 #define nspace(F,B) readUntil(F,B,NSPACE_TOKENS)
 namespace assets {
   sprite_t default_texture{
@@ -253,6 +253,24 @@ namespace assets {
     DO(file){fclose(file);file=NULL;}else{fflush(stdout);perror("???");return default_texture;errno=0;}
     return out;
   }
+#define EXPCORDIE(N,C,N1) DO((buddyholly=fgetc(file))!=C){printf("%li:\'%c\':",ftell(file),buddyholly);fflush(stdout);ORDIE(N " " #C " " N1)}
+  static char readChar(FILE* file,char* tmp){
+    char buddyholly;
+    EXPCORDIE("expected",'\'',"to start character literal")
+    char c=fgetc(file);
+    if(c=='\\'){
+      tmp[0]=fgetc(file);
+      if(!((tmp[0]=='\\')||(tmp[0]=='\''))){
+        // tmp[readUntil(file,tmp,'\'')]='\0';
+        tmp[nspace(file,tmp+1)+1]='\0';//there's a buffer overflow here but im lowkirk lazy
+        unsigned d=atoi(tmp);//and it's only 1 byte
+        DO(d>255)ORDIE("char literal too big")
+        c=d;
+      }else{c=tmp[0];}
+    }
+    EXPCORDIE("expected",'\'',"to end character literal")
+    return c;
+  }
   static void doSVGLine(FILE* file,char* tmp,mesh::vec2<unsigned> a,mesh::vec2<unsigned> b,int c,char d,sprite_t* out,unsigned width,unsigned height){
     char e=(abs((int)a.x-(int)b.x)>abs((int)a.y-(int)b.y));
     if(e){
@@ -270,7 +288,7 @@ namespace assets {
     }
     float s=((float)b.y-a.y)/(b.x-a.x);
     static const float slopes[4]={tan(-M_PI_4*3/2),tan(-M_PI_4/2),tan(M_PI_4/2),tan(M_PI_4*3/2)};
-    if(!d){d=(s<slopes[0])?'|':((s<slopes[1])?'/':((s<slopes[2])?'-':((s<slopes[3])?'\\':'|')));}
+    if(!d){d=(s<slopes[0])?'|':((s<slopes[1])?'\\':((s<slopes[2])?'-':((s<slopes[3])?'/':'|')));}
     if(e){
       for(unsigned i=a.x;i<b.x;i++){
         unsigned j=((int)((i-a.x)*s+a.y)*width)+i;
@@ -287,17 +305,19 @@ namespace assets {
     }
   }
   sprite_t readRGVTX(const char* filename,unsigned int width,unsigned int height){//these are getting
+    printf("loading asset %s@%ux%u\n",filename,width,height);
     if(!filename||!width||!height||!*filename){//bloated and could use some trimming
       printf("warning: illegal parameters (%p,%u,%u), using default texture >:(\n",filename,width,height);
       return default_texture;
     }
     sprite_t out{width,height,(unsigned char*)malloc(3*width*height),(char*)malloc(width*height)};
-    memset(out.chars,'*',width*height);
+    memset(out.chars,'\0',width*height);
     memset(out.pixels,255,3*width*height);
     FILE* file=fopen(filename,"r");
     char* tmp = (char*)malloc(128);
     DO(!out.pixels)ORDIE("couldn't alloc for texture")
-    DO(!file||!tmp||ferror(file))ORDIE("couldn't alloc for read or open for read")
+    DO(!tmp)ORDIE("couldn't alloc for read")
+    DO(!file||ferror(file))ORDIE("couldn't open file for read")
     unsigned int token_length;
     size_t l=0;
     char buddyholly='\0';
@@ -306,7 +326,6 @@ namespace assets {
       wspace(file,tmp);
       token_length=nspace(file,tmp);
 #define state(N) if((token_length==(l=strlen(N)))&&(!memcmp(tmp,N,l)))
-#define EXPCORDIE(N,C,N1) DO((buddyholly=fgetc(file))!=C){printf("%li:\'%c\':",ftell(file),buddyholly);fflush(stdout);ORDIE(N " " #C " " N1)}
 #define getParam(T,N,F) T N=F(file,tmp);EXPCORDIE("expected",',',"to separate parameters");wspace(file,tmp)
       state("line"){
         wspace(file,tmp);
@@ -319,9 +338,8 @@ namespace assets {
         wspace(file,tmp);
         char z=fgetc(file);
         if(z==','){
-          wspace(file,tmp);EXPCORDIE("expected",'\'',"for character literal")
-          d=fgetc(file);
-          EXPCORDIE("expected",'\'',"for character literal")
+          wspace(file,tmp);
+          d=readChar(file,tmp);
           wspace(file,tmp);
           EXPCORDIE("expected",')',"to end line call")
         }else DO(z!=')'){
@@ -332,13 +350,28 @@ namespace assets {
       }else state("char"){
         wspace(file,tmp);
         EXPCORDIE("expected",'(',"to start char call")
+        wspace(file,tmp);
         getParam(mesh::vec2<float>,p,readV2f);p=p*scale;
-        EXPCORDIE("expected",'\'',"for character literal")
-        char c=fgetc(file);
-        EXPCORDIE("expected",'\'',"for character literal")
+        char c=readChar(file,tmp);
         wspace(file,tmp);
         EXPCORDIE("expected",')',"to end char call")
         out.chars[((unsigned)p.y*width)+(unsigned)p.x]=c;
+      }else state("fill"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start fill call")
+        getParam(mesh::vec2<float>,a,readV2f);a=a*scale;
+        getParam(mesh::vec2<float>,b,readV2f);b=b*scale;
+        getParam(int,c,readColor);
+        char d=readChar(file,tmp);
+        wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end fill call")
+        DO((a.x>b.x)||(a.y>b.y))ORDIE("expected first point to be top left and second to be bottom right")
+        for(unsigned y=a.y;y<b.y;y++){
+          for(unsigned x=a.x;x<b.x;x++){
+            memcpy(&out.pixels[3*(y*width+x)],&c,3);
+            out.chars[(y*width+x)]=d;
+          }
+        }
       }else state("lines"){
         wspace(file,tmp);
         EXPCORDIE("expected",'(',"to start line call")
@@ -349,9 +382,8 @@ namespace assets {
         wspace(file,tmp);
         char z=fgetc(file);
         if(z==','){
-          wspace(file,tmp);EXPCORDIE("expected",'\'',"for character literal")
-          d=fgetc(file);
-          EXPCORDIE("expected",'\'',"for character literal")
+          wspace(file,tmp);
+          d=readChar(file,tmp);
           wspace(file,tmp);
           EXPCORDIE("expected",')',"to end line call")
         }else DO(z!=')'){
@@ -364,11 +396,26 @@ namespace assets {
       }else state("scale"){
         wspace(file,tmp);
         EXPCORDIE("expected",'(',"to start scale call")
-        tmp[nspace(file,tmp)]='\0';scale.x=width/atof(tmp);
+        tmp[nspace(file,tmp)]='\0';scale.x=(width-1)/atof(tmp);
         EXPCORDIE("expected",',',"to delimit parameters");wspace(file,tmp);
-        tmp[nspace(file,tmp)]='\0';scale.y=height/atof(tmp);wspace(file,tmp);
+        tmp[nspace(file,tmp)]='\0';scale.y=(height-1)/atof(tmp);wspace(file,tmp);
         EXPCORDIE("expected",')',"to end scale call")
-      }else state("triangle"){
+      }else state("color"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start color call")
+        wspace(file,tmp);
+        getParam(mesh::vec2<float>,p,readV2f);p=p*scale;
+        int c=readColor(file,tmp);wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end color call")
+        memcpy(&out.pixels[3*(((unsigned)p.y*width)+(unsigned)p.x)],&c,3);
+      }/*else state("circle"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start circle call")
+        wspace(file,tmp);
+        getParam(mesh::vec2<float>,p,readV2f);p=p*scale;
+        tmp[nspace(file,tmp)]='\0';
+        int r=atof(tmp);//do later
+      }*/else state("triangle"){
         wspace(file,tmp);
         EXPCORDIE("expected",'(',"to start triangle call")
         wspace(file,tmp);
@@ -376,9 +423,7 @@ namespace assets {
         getParam(mesh::vec2<int>,b,readV2f);b=b*scale;
         getParam(mesh::vec2<int>,c,readV2f);c=c*scale;
         getParam(int,d,readColor);
-        EXPCORDIE("expected",'\'',"for character literal")
-        char e=fgetc(file);
-        EXPCORDIE("expected",'\'',"for character literal")
+        char e=readChar(file,tmp);
         wspace(file,tmp);
         EXPCORDIE("expected",')',"to end triangle call")
         for(int x=min(a.x,b.x,c.x);x<max(a.x,b.x,c.x);x++){
