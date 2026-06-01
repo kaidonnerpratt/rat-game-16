@@ -149,9 +149,9 @@ namespace gui {
   }
 
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPX(T x,T d){return (scoord)(((x/d)*(term_dims.ws_col/screen_scale/2))+term_dims.ws_col/2);}
+  inline const scoord toSSPX(T x,T d){return (scoord)(((x/d)*(term_dims.ws_col*screen_scale/2))+term_dims.ws_col/2);}
   template<typename T> requires (std::is_arithmetic_v<T>)&&(std::is_signed_v<T>)
-  inline const scoord toSSPY(T y,T d){return (scoord)(((y/d)*(term_dims.ws_row/screen_scale/2))+term_dims.ws_row/2);}
+  inline const scoord toSSPY(T y,T d){return (scoord)(((y/d)*(term_dims.ws_row*screen_scale/2))+term_dims.ws_row/2);}
   inline const scoord toSSPI(scoord x,scoord y){return min((y*term_dims.ws_col)+x,max_chars);}
 
   char putChar(scoord x,scoord y,unsigned char c){
