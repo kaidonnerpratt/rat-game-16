@@ -50,8 +50,6 @@ void drawWorld(){
   if(gamestate.paused){
     gui::putMenu(&pausemenu,0,0);
   }else{
-    memset(gui::term_buffer,'3',gui::term_dims.ws_col);
-    gui::putChar(0,0,'!');
     for(unsigned int i=0;i<scene.mesh.tricount;i++){
       gui::drawMTri(scene.mesh.tris[i],scene.textures[scene.tex_binds[i]]);
     }
@@ -78,7 +76,7 @@ void loadModels(){
   scene=assets::readAsset3d("./assets/newscene.rgmdl");//ari i'm going to ear you
 }
 void loadSprites(){
-  puts("LOADING SPRITES");
+  puts("LOADING SPRITES\r");
   sprite=assets::readRGVTX("./assets/sprite/hand.rgvtx",gui::term_dims.ws_col,gui::term_dims.ws_row);
 }
 void loadMenus(){
@@ -89,7 +87,6 @@ void loadMenus(){
   };
   mainmenu.items=(gui::text_t*)malloc(sizeof(gui::text_t));
   mainmenu.items[0]={&f_big,"RAT GAME 16" VERSION,strlen("RAT GAME 16" VERSION),gui::LEFT};
-  // mainmenu.items[1]={NULL,"now with variably aligned text",30,gui::CENTER};
   mainmenu.buttons=(gui::text_t*)malloc(sizeof(gui::text_t)*2);
   mainmenu.funcs=(function*)malloc(sizeof(function)*2);
   mainmenu.buttons[0]={&f_avatar,"start game",10,gui::LEFT};
@@ -120,7 +117,7 @@ int main() {
   loadMenus();
   gamestate.drawFunc=drawMainMenu;
   gui::init();
-  // loadSprites();
+  loadSprites();
   unsigned char escapes=0;
   unsigned char rotamnt=16;
   float rotamntrad = (rotamnt/128.0f)*M_PI;

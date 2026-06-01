@@ -305,9 +305,9 @@ namespace assets {
     }
   }
   sprite_t readRGVTX(const char* filename,unsigned int width,unsigned int height){//these are getting
-    printf("loading asset %s@%ux%u\n",filename,width,height);
+    printf("loading asset %s@%ux%u\r\n",filename,width,height);
     if(!filename||!width||!height||!*filename){//bloated and could use some trimming
-      printf("warning: illegal parameters (%p,%u,%u), using default texture >:(\n",filename,width,height);
+      printf("warning: illegal parameters (%p,%u,%u), using default texture >:(\r\n",filename,width,height);
       return default_texture;
     }
     sprite_t out{width,height,(unsigned char*)malloc(3*width*height),(char*)malloc(width*height)};
@@ -374,7 +374,7 @@ namespace assets {
         }
       }else state("lines"){
         wspace(file,tmp);
-        EXPCORDIE("expected",'(',"to start line call")
+        EXPCORDIE("expected",'(',"to start lines call")
         wspace(file,tmp);
         getParam(std::vector<mesh::vec2<float>>,pts,readV2fVec);
         int c=readColor(file,tmp);
@@ -388,7 +388,7 @@ namespace assets {
           EXPCORDIE("expected",')',"to end line call")
         }else DO(z!=')'){
           printf("%li:\'%c\':",ftell(file),z);fflush(stdout);
-          ORDIE("expected ')' to end line call or ',' to continue line call")
+          ORDIE("expected ')' to end line call or ',' to continue lines call")
         }
         for(unsigned i=1;i<pts.size();i++){
           doSVGLine(file,tmp,pts[i-1]*scale,pts[i]*scale,c,d,&out,width,height);
@@ -408,6 +408,41 @@ namespace assets {
         int c=readColor(file,tmp);wspace(file,tmp);
         EXPCORDIE("expected",')',"to end color call")
         memcpy(&out.pixels[3*(((unsigned)p.y*width)+(unsigned)p.x)],&c,3);
+      }else state("polygon"){
+        wspace(file,tmp);
+        EXPCORDIE("expected",'(',"to start triangle call")
+        wspace(file,tmp);
+        getParam(std::vector<mesh::vec2<float>>,pts,readV2fVec);
+        getParam(int,c,readColor);
+        char d=readChar(file,tmp);wspace(file,tmp);
+        EXPCORDIE("expected",')',"to end triangle call")
+        DO(pts.size()<3)ORDIE("not enough coordinates for a polygon")
+        float minx=out.width,maxx=0,miny=out.height,maxy=0;
+        for(unsigned i=0;i<pts.size();i++){
+          minx=min(pts[i].x,minx);maxx=max(pts[i].x,maxx);
+          miny=min(pts[i].y,miny);maxy=max(pts[i].y,maxy);
+        }
+        minx*=scale.x;maxx*=scale.x;miny*=scale.y;maxy*=scale.y;
+        // fprintf(debug,"(%.3f,%.3f),(%.3f,%.3f)\n",minx,miny,maxx,maxy);
+        for(int x=minx;x<maxx;x++){//lowk ear but it works i think
+          for(int y=miny;y<maxy;y++){
+            for(unsigned i=2;i<pts.size();i++){
+              mesh::vec2<int> a=pts[0]*scale,b=pts[i]*scale,c=pts[i-1]*scale;
+              int a0=abs(triarea(a.x,a.y,b.x,b.y,c.x,c.y));
+              int a1=abs(triarea(x,y,b.x,b.y,c.x,c.y))+
+              abs(triarea(a.x,a.y,x,y,c.x,c.y))+
+              abs(triarea(a.x,a.y,b.x,b.y,x,y));
+              if(a1<=a0){
+                goto draw;
+              }
+            }
+            goto end;
+            draw:
+            memcpy(&out.pixels[3*(y*width+x)],&c,3);
+            out.chars[(y*width+x)]=d;
+            end:;
+          }
+        }
       }/*else state("circle"){
         wspace(file,tmp);
         EXPCORDIE("expected",'(',"to start circle call")
@@ -523,7 +558,7 @@ namespace assets {
             memmove(tmp+15,tmp,token_length);
             memcpy(tmp,"assets/texture/",15);
             tmp[15+token_length]='\0';
-            printf("reading textures %s:",tmp);
+            printf("  reading textures %s:",tmp);
             textures.push_back(readPPM(tmp));
           }
         }else if(!memcmp(tmp,"tex_set",7)){

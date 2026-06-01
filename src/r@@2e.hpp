@@ -51,8 +51,10 @@ namespace gui {
   //screen data. once things get multithreaded, make volatile
   struct winsize term_dims;//represents current terminal dimensions. has fields ws_row and ws_col. should change
   char* term_buffer=NULL;
+  char* term_buffer_alt=NULL;
   unsigned char* depth_buffer=NULL;
   color_t* color_buffer=NULL;
+  color_t* color_buffer_alt=NULL;
 #ifdef do_debug
   char* debug_buffer=NULL;
 #endif
@@ -60,9 +62,10 @@ namespace gui {
 
   __attribute__((format (printf,1,2))) void dbprintf(const char* str, ...){
     va_list args;
-    fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout);
+    fwrite("\x1b[0;0H\x1b[0m",1,10,stdout);
     va_start(args,str);
     vfprintf(stdout,str,args);
+    vfprintf(debug,str,args);
     va_end(args);
     fflush(stdout);
   }
@@ -90,8 +93,8 @@ namespace gui {
       printf("restoring terminal state\n\r");
       if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&old_term_state)){perror("couldn't to restore terminal state");}
     )
-    BRKST(TBUF,if(term_buffer){free(term_buffer);term_buffer=NULL;max_chars=0;})
-    BRKST(CBUF,if(color_buffer){free(color_buffer);color_buffer=NULL;})
+    BRKST(TBUF,if(term_buffer){free(term_buffer);term_buffer=NULL;}if(term_buffer_alt){free(term_buffer_alt);term_buffer_alt=NULL;}max_chars=0;)
+    BRKST(CBUF,if(color_buffer){free(color_buffer);color_buffer=NULL;}if(color_buffer_alt){free(color_buffer_alt);color_buffer_alt=NULL;})
     BRKST(DBUF,if(depth_buffer){free(depth_buffer);depth_buffer=NULL;})
     #ifdef do_debug
     BRKST(BBUF,if(debug_buffer){free(debug_buffer);debug_buffer=NULL;})
@@ -102,10 +105,18 @@ namespace gui {
   void stop() {stop(NULL);}
 
   void sig_handler(int sig){//not using mode bit ISIG so doesn't proc (i think)
-    printf("bazinga%u",sig);
     FILE* g = fopen("log","w+");
     fprintf(g,"%u\n",sig);
     fclose(g);
+  }
+
+  void swap_bufs(){
+    char* tmpt=term_buffer;
+    color_t* tmpc=color_buffer;
+    term_buffer=term_buffer_alt;
+    color_buffer=color_buffer_alt;
+    term_buffer_alt=tmpt;
+    color_buffer_alt=tmpc;
   }
 
   void clear_scr() {
@@ -143,14 +154,18 @@ namespace gui {
     //get some data about what the terminal looks like
     DO(ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_dims))ORDIE("couldn't get terminal dimensions");
     max_chars=term_dims.ws_col*term_dims.ws_row;
-#define tryalloc(A,B,C,D) DO((A ## _buffer=(B)malloc(C))==NULL)ORDIE("couldn't allocate for " #A);state|=STATE_ ## D;
-    tryalloc(term,char*,max_chars,TBUF);
-    tryalloc(color,color_t*,max_chars,CBUF);
-    tryalloc(depth,unsigned char*,max_chars,DBUF);
+#define tryalloc(A,B,C,D) DO((A=(B)malloc(C))==NULL)ORDIE("couldn't allocate for " #A);state|=STATE_ ## D;
+    tryalloc(term_buffer,char*,max_chars,TBUF);
+    tryalloc(term_buffer_alt,char*,max_chars,TBUF);
+    tryalloc(color_buffer,color_t*,max_chars,CBUF);
+    tryalloc(color_buffer_alt,color_t*,max_chars,CBUF);
+    tryalloc(depth_buffer,unsigned char*,max_chars,DBUF);
     #ifdef do_debug
-    tryalloc(debug,char*,term_dims.ws_col,BBUF);
+    tryalloc(debug_buffer,char*,term_dims.ws_col,BBUF);
     #endif
 #undef tryalloc
+    clear_scr();
+    swap_bufs();
     clear_scr();
     // struct sigaction t;
     // DO(sigaction(SIGTTOU,&t,NULL)==-1)ORDIE("couldn't examine action for ttou"); //double check things work later
@@ -308,52 +323,51 @@ namespace gui {
           g=sprite->pixels[3*((y1*sprite->width)+x1)+1],
           b=sprite->pixels[3*((y1*sprite->width)+x1)+2];
           char c=(r>128)|((g>128)<<1)|((b>128)<<2)|(((r+g+b)>(255.0f*3/2))<<3);
-          putColor(x1+x,term_dims.ws_row-y1+y,colors::col((colors::color)c,colors::black));
-          putChar(x1+x,term_dims.ws_row-y1+y,sprite->chars[y1*sprite->width+x1]);
+          putColor(x1+x,term_dims.ws_row-y1+y-1,colors::col((colors::color)c,colors::black));
+          putChar(x1+x,term_dims.ws_row-y1+y-1,sprite->chars[y1*sprite->width+x1]);
         }
       }
     }
   }
 
   void drawFrame(){
-    DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
-    color_t last_color_fg=color_buffer[0]&0x0F;//why the FUCK would he have bits 3 and 4 be
-    color_t last_color_bg=color_buffer[0]&0xF0;//brightness instead of 3 and 7 like a normal person
-    scoord last_char=0;
+    // DO(fwrite("\x1b[2J\x1b[0;0H\x1b[0m",1,10,stdout)<10)ORDIE("couldn't write control codes to terminal");
+    color_t lcolfg=color_buffer[0]&0x0F;//why the FUCK would he have bits 3 and 4 be
+    color_t lcolbg=color_buffer[0]&0xF0;//brightness instead of 3 and 7 like a normal person
+    scoord lchar;
     char* buf=(char*)malloc(8);
     buf[7]='\0';
-    fputs(ansi_fg(color_buffer[0],buf),stdout);//ear kai
-    // fputs(ansi_bg(color_buffer[0],buf),stdout);
-    for(scoord i=1;i<max_chars;i++){//could def use optimization to minimize color calls (combine fg & bg,
-      bool fg_change=((color_buffer[i]&0x0F)!=last_color_fg);//minimize write ops)
-      bool bg_change=((color_buffer[i]&0xF0)!=last_color_bg);//keep prev frame buffer and move cursor around
-      if(fg_change||bg_change){//to minimize bytes written when only changing a bit of screen
-        fwrite(term_buffer+last_char,1,i-last_char,stdout);
-        fputs("\x1b[22m",stdout);
-        if(fg_change){
-          last_color_fg=color_buffer[i];
-          if(bg_change){
-            fputs(ansi_fg(color_buffer[i],buf),stdout);
-            fputs(ansi_bg(color_buffer[i],buf),stdout);
-            fseek(stdout,-1,SEEK_CUR);//trailing \0 could be prevented by ansi_fg returning a thing
-            last_color_bg=color_buffer[i];//would look like fwrite(buf,1,ansi_fg(...),stdout)
-          }else{//where the ansi_fg and bg functions return the amount of chars to write
-            fputs(ansi_fg(color_buffer[i],buf),stdout);
+    for(scoord i=0;i<max_chars;i++){
+      if((term_buffer[i]!=term_buffer_alt[i])||(color_buffer[i]!=color_buffer_alt[i])){
+        fprintf(stdout,"\x1b[%u;%uH",i/term_dims.ws_col,i%term_dims.ws_col);
+        lchar=i;lcolfg=color_buffer[i]&0x0F;lcolbg=color_buffer[i]&0xF0;
+        scoord three=0;
+        do{
+          i++;
+          if(color_buffer[i]==color_buffer_alt[i]){
+            if(term_buffer[i]==term_buffer_alt[i]){
+              three++;
+            }
+          }else{
+            three=0;
+            fwrite(&term_buffer[lchar],1,i-lchar,stdout);
+            if(lcolfg!=(color_buffer[i]&0x0F)){
+              lcolfg=color_buffer[i]&0x0F;
+              fputs(ansi_fg(lcolfg,buf),stdout);
+            }
+            if(lcolbg!=(color_buffer[i]&0xF0)){
+              lcolbg=color_buffer[i]&0xF0;
+              fputs(ansi_bg(lcolbg,buf),stdout);
+            }
+            lchar=i;
           }
-        }else{
-          if(bg_change){
-            fputs(ansi_bg(color_buffer[i],buf),stdout);
-            fseek(stdout,-1,SEEK_CUR);
-            last_color_bg=color_buffer[i];
-          }
-        }
-        last_char=i;
+        }while(three<8);
       }
     }
-    fwrite(term_buffer+last_char,1,max_chars-last_char,stdout);
     free(buf);
     // fseek(stdout,-1,SEEK_CUR);
     fflush(stdout);
+    swap_bufs();
   }
 }
 #undef DO

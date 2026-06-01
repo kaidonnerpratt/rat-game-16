@@ -137,7 +137,7 @@ namespace mesh {
     #undef o2
     #undef o3
   }
-  vec3<mesh_size> camera_position{-5.0f,0.0f,0.0f};
+  vec3<mesh_size> camera_position{-2.0f,0.0f,0.0f};
   vec3<char>      camera_rotation{0,0,0};//roll pitch yaw
 }
 namespace gui {
@@ -150,7 +150,7 @@ namespace gui {
   }
   void drawTri(const tri3<mesh_size>& t1, vec2<float> uv0, vec2<float> uv1, vec2<float> uv2, assets::texture_t& tex){
     mesh_size z0=t1.a.x,z1=t1.b.x,z2=t1.c.x;
-    printd("triangle((%f,%f,%f),(%f,%f,%f),(%f,%f,%f));polygon((%f,%f),(%f,%f),(%f,%f))",t1.a.x,t1.a.y,t1.a.z,t1.b.x,t1.b.y,t1.b.z,t1.c.x,t1.c.y,t1.c.z,uv0.x,uv0.y,uv1.x,uv1.y,uv2.x,uv2.y);
+    printd("triangle((%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f));\n\rpolygon((%.3f,%.3f),(%.3f,%.3f),(%.3f,%.3f))\r\n",t1.a.x,t1.a.y,t1.a.z,t1.b.x,t1.b.y,t1.b.z,t1.c.x,t1.c.y,t1.c.z,uv0.x,uv0.y,uv1.x,uv1.y,uv2.x,uv2.y);
     signed short int
       x0=toSSPX(t1.a.y,z0),y0=toSSPY(t1.a.z,z0),
       x1=toSSPX(t1.b.y,z1),y1=toSSPY(t1.b.z,z1),
