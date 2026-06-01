@@ -22,10 +22,18 @@
 #define STATE_DBUF 0b00010000
 #define STATE_ICLR 0b10000000
 namespace gui {
-  float screen_scale = tan(mesh::fov/2.0f)*2;
+  float screen_scale = tan(mesh::fov/2.0f);
+  using namespace mesh;
+  void updateFrustum(){
+    planes[NEAR].D=nearplanex;
+    planes[LEFT]   = (plane_t){vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
+    planes[RIGHT]  = (plane_t){vec3<float>{(float)cos(fov/2.0f),(float)-sin(fov/2.0f),0},0};
+    planes[BOTTOM] = (plane_t){vec3<float>{(float)cos(fov/2.0f),0,(float)sin(fov/2.0f)},0};
+    planes[TOP]    = (plane_t){vec3<float>{(float)cos(fov/2.0f),0,(float)-sin(fov/2.0f)},0};
+  }
   void update_fov(){
-    screen_scale=tan(mesh::fov/2.0f)*2;
-    mesh::updateFrustum();
+    screen_scale=tan(mesh::fov/2.0f);
+    updateFrustum();
   }
   menu_t* selected_menu;
   scoord selected_btn;

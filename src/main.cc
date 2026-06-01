@@ -87,8 +87,8 @@ int main() {
     if(c){
       clock_t t=clock();
       gui::clear_scr();
-      gui::drawModel(model1);
       gui::drawModel(model0);
+      gui::drawModel(model1);
       gui::putMenu(&menu,1,1);
       gui::drawFrame();
       clock_t t1=clock()-t;

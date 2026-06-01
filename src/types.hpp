@@ -56,7 +56,7 @@ namespace gui {
   };
 }
 namespace mesh {
-  float fov = M_PI_4;
+  float fov = M_PI_2;
   float nearplanex=1.0f;
 
   typedef float mesh_size;
@@ -151,11 +151,11 @@ namespace mesh {
   };
   enum PLANE {NEAR=0,LEFT,RIGHT,BOTTOM,TOP};
   plane_t planes[5]={
-    {nearplanex,0,0,0},
+    {1,0,0,nearplanex},
     {vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0},
-    {vec3<float>{(float)-cos(fov/2.0f),(float)sin(fov/2.0f),0},0},
-    {vec3<float>{0,(float)sin(fov/2.0f),(float)cos(fov/2.0f)},0},
-    {vec3<float>{0,(float)cos(fov/2.0f),(float)-cos(fov/2.0f)},0}
+    {vec3<float>{(float)cos(fov/2.0f),(float)-sin(fov/2.0f),0},0},
+    {vec3<float>{(float)cos(fov/2.0f),0,(float)sin(fov/2.0f)},0},
+    {vec3<float>{(float)cos(fov/2.0f),0,(float)-sin(fov/2.0f)},0}
   };
   struct model_t {
     short unsigned int tricount;

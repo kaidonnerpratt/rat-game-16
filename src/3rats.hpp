@@ -17,13 +17,6 @@ template<arith T> inline auto constexpr triarea(T x0,T y0,T x1,T y1,T x2,T y2){
 }
 namespace mesh {
   unsigned int farplanex=8;
-  void updateFrustum(){
-    planes[NEAR].normal.z=nearplanex;
-    planes[LEFT]   = (plane_t){vec3<float>{(float)cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
-    planes[RIGHT]  = (plane_t){vec3<float>{(float)-cos(fov/2.0f),(float)sin(fov/2.0f),0},0};
-    planes[BOTTOM] = (plane_t){vec3<float>{0,(float)sin(fov/2.0f),(float)cos(fov/2.0f)},0};
-    planes[TOP]    = (plane_t){vec3<float>{0,(float)cos(fov/2.0f),(float)-cos(fov/2.0f)},0};
-  }
   const char* charsbyopacity="$@MN%&E0K?UO^!;:,.";
   int opacitylength=18;
   template<arith T> inline void rotate(T& axis_0,T& axis_1,char d){
@@ -38,6 +31,7 @@ namespace mesh {
   }
   int clipModelPlane(model_t m, plane_t p, vec3<float> c, vec3<char> r){
     vec3<float> cen = m.getCenter()-c;rotate(cen.x,cen.y,r.z);
+  
     float sd = p.signedDistance(cen);
     float mr = m.getRadius();
     if (sd > mr){
@@ -62,7 +56,6 @@ namespace mesh {
   } 
   template<typename T> int clipTri(tri3<T> t, vec3<float> c, vec3<char> r){
     int ret=0;
-    int clip = 0;
     for (int i = 0; i < 5; i++){
       int tc = clipTriPlane(t,planes[i],c,r);
       switch(tc){
@@ -346,7 +339,7 @@ namespace gui {
     }else{drawTri(t1, t1.uv0, t1.uv1, t1.uv2, tex);/*merge uvs into tri2<float>*/}
   }
   int drawModel(assets::asset3d_t m){
-    vec3<float> mcc = m.mesh.getCenter()-camera_position; 
+    vec3<float> mcc = m.mesh.getCenter()-camera_position; rotate(mcc.x,mcc.y,camera_rotation.z);
     int mc = clipModel(m.mesh, camera_position, camera_rotation);
     switch(mc){
       case(0):{
@@ -355,12 +348,23 @@ namespace gui {
         }
       };break;
       case(1):{
-        // die
+        // for(short unsigned int i=0;i<m.mesh.tricount;i++){
+        //   drawMTri(m.mesh.tris[i],m.texture);
+        // }
       };break;
       case(2):{
         for(short unsigned int i=0;i<m.mesh.tricount;i++){
-          if (clipTri(m.mesh.tris[i],camera_position,camera_rotation)){
-            drawMTri(m.mesh.tris[i],m.texture);
+          int tc = clipTri(m.mesh.tris[i],camera_position,camera_rotation);
+          switch(tc){
+            case(0):{
+              drawMTri(m.mesh.tris[i],m.texture);
+            };break;
+            case(1):{
+              // die
+            };break;
+            case(2):{
+              drawMTri(m.mesh.tris[i],m.texture);
+            };break;
           }
         }
       };break;
