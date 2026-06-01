@@ -1,0 +1,7 @@
+model = scene_demo/newscene.stl;
+model_offset(0,-2,0)
+model_rotate(0.25,0,0.5)
+texture = [ice_crushed.ppm,error texture example,ice_bricks.ppm];
+texmap_filldefault()
+texbind_fill(x:1,+z:2,y:1)
+texmap_scale(0.25,0.25)

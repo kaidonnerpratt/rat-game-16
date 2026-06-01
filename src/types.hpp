@@ -11,31 +11,27 @@ namespace colors {
   typedef unsigned char color_t;//4 bits for fg and bg. bg lshift 4
 }
 namespace assets {
-  struct texture_t {
-      unsigned char* pixels;
-      unsigned int width, height;
-      texture_t() = default;
-      texture_t(const texture_t& o) {
-          width=o.width; height=o.height;
-          pixels=(unsigned char*)malloc(width*height*3);
-          memcpy(pixels,o.pixels,width*height*3);
-      }
-      // ~texture_t() noexcept {free(pixels);}
+  struct texture_t{
+    unsigned int width, height;
+    unsigned char* pixels;
   };
-  #define UPPER(f) &f.map[f.sizex*f.sizey*(unsigned char)'A']
-  #define LOWER(f) &f.map[f.sizex*f.sizey*(unsigned char)'a']
-  #define SPECIAL(f) &f.map[f.sizex*f.sizey*(unsigned char)'!']
-  #define NUMBERS(f) &f.map[f.sizex*f.sizey*(unsigned char)'0']
-  #define SPECIAL2(f) &f.map[f.sizex*f.sizey*(unsigned char)'[']
-  #define SPECIAL3(f) &f.map[f.sizex*f.sizey*(unsigned char)'{']
+  struct sprite_t:texture_t{//SFAWTDE or SFINAE or something
+    char* chars;
+  };
+  #define UPPER(f) &f.map[(unsigned char)'A']
+  #define LOWER(f) &f.map[(unsigned char)'a']
+  #define SPECIAL(f) &f.map[(unsigned char)'!']
+  #define NUMBERS(f) &f.map[(unsigned char)'0']
+  #define SPECIAL2(f) &f.map[(unsigned char)'[']
+  #define SPECIAL3(f) &f.map[(unsigned char)'{']
   struct font_t{
-    unsigned char sizex,sizey;
-    char* map;
+    unsigned char sizey;
+    unsigned char* sizex;
+    char** map;
   };
 }
 namespace gui {
   typedef unsigned short int scoord;//coordinate on the screen, in characters
-  typedef unsigned char sfrac;//represents the fraction of width/this
   enum text_align{
     LEFT,CENTER,RIGHT//tbd
   };
@@ -46,8 +42,8 @@ namespace gui {
     text_align alignment;
   };
   struct menu_t{
-    const scoord sizex,sizey;
-    const char borders[5];//up/down/left/right/corner
+    scoord sizex,sizey;
+    char borders[5];//up/down/left/right/corner
     scoord textcount;
     text_t* items;
     scoord btncount;
@@ -70,6 +66,8 @@ namespace mesh {
     template<typename U> auto constexpr operator*(const U& v)const{return (vec2<decltype(std::declval<T>()*std::declval<U>())>){x*v,y*v};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v.x,y/v.y};}
     template<typename U> auto constexpr operator/(const U& v)const{return (vec2<decltype(std::declval<T>()/std::declval<U>())>){x/v,y/v};}
+    template<typename U> constexpr operator U()const;
+    auto constexpr magnitude()const{return sqrt((x*x)+(y*y));}
     auto constexpr total()const{return x+y;}
   };//all of these should implement https://cplusplus.com/reference/type_traits/is_nothrow_move_constructible/
   template<typename T> requires arith<T>&&comp<T> struct vec3 {
@@ -90,6 +88,7 @@ namespace mesh {
   template<typename T> struct vec_inner<vec2<T>>{using type=T;};
   template<typename T> struct vec_inner<vec3<T>>{using type=T;};
   template<typename T> using  vec_inner_t=typename vec_inner<T>::type;
+  template<class T> template<class U> constexpr mesh::vec2<T>::operator U() const {return vec2<vec_inner_t<U>>{(vec_inner_t<U>)x,(vec_inner_t<U>)y};}
   template<typename T> requires arith<T>&&comp<T> struct tri2 {
     vec2<T> a,b,c;
     template<typename U> auto constexpr operator+(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()+std::declval<vec2<U>>())>>){a+t.a,b+t.b,c+t.c};}
@@ -104,7 +103,7 @@ namespace mesh {
     template<typename U> auto constexpr operator/(const tri2<U>& t)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/t.a,b/t.b,c/t.c};}
     template<typename U> auto constexpr operator/(const vec2<U>& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<vec2<U>>())>>){a/v,b/v,c/v};}
     template<typename U> auto constexpr operator/(const U& v)const{return (tri2<vec_inner_t<decltype(std::declval<vec2<T>>()/std::declval<U>())>>){a/v,b/v,c/v};}
-  };
+  };//welcome to templat hell
   template<typename T> requires arith<T>&&comp<T> struct tri3 {
     vec3<T> a,b,c;  //my compiler is going to blow its brains out
     //nan used here so it doesn't fucking try to initilize the center or radius
@@ -193,6 +192,8 @@ namespace assets{
     assets::texture_t texture;
     float radius(){return mesh.getRadius();}
     mesh::vec3<float> center(){return mesh.getCenter();}
+    unsigned char* tex_binds;
+    assets::texture_t* textures;
   };
 }
 #endif
